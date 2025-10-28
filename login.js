@@ -25,7 +25,7 @@ document.getElementById('loginForm').addEventListener('submit', async function (
 
     if (email === emailCorreto && senhaHashDigitada === senhaHashCorreta) {
         localStorage.setItem('isAuthenticated', 'true');
-        window.location.href = 'index.html';
+        window.location.href = 'termo.html';
     } else {
         errorMessage.textContent = "E-mail ou senha incorretos.";
         errorMessage.classList.remove('hidden');
