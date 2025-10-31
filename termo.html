@@ -1,193 +1,651 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerador de Termo de Responsabilidade (v12-Híbrido)</title>
+    <title>Gerador de Termo de Responsabilidade (v13-Corrigido)</title>
 
+    <script>
+        // SCRIPT DE GUARDA DE AUTENTICAÇÃO
+        if (localStorage.getItem('isAuthenticated') !== 'true') {
+            // Se não estiver autenticado, redireciona IMEDIATAMENTE para o login
+            alert("Acesso negado. Por favor, faça o login.");
+            window.location.replace('index.html');
+        }
+    </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
     <script src='https://cdn.jsdelivr.net/npm/tesseract.js@latest/dist/tesseract.min.js'></script>
 
     <style>
         /* --- CORREÇÃO DE LAYOUT --- */
-        body { 
-            font-family: Arial, sans-serif; 
-            background-color: #f0f2f5; 
-            display: flex; 
-            align-items: flex-start; 
-            justify-content: center; /* Centraliza o conteúdo */
-            gap: 30px; 
-            padding: 20px; 
-            font-size: 14px;
-            flex-wrap: wrap; /* <<< CORREÇÃO: Faz o preview quebrar para baixo em telas pequenas */
-        }
-        #form-container { 
-            flex: 0 0 450px; 
-            background: #ffffff; 
-            padding: 25px; 
-            border-radius: 8px; 
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); 
-            position: sticky; 
-            top: 20px; 
-            max-height: 95vh; 
-            overflow-y: auto; 
-        }
-        #form-container h1 { text-align: center; margin-top: 0; margin-bottom: 25px; font-size: 1.5rem; color: #333; }
-        .form-section { margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 20px; }
-        .form-section:last-of-type { border-bottom: none; padding-bottom: 0; }
-        .form-section h2 { 
-            font-size: 1.1rem; color: #333; margin-top: 0; margin-bottom: 15px; 
-            border-bottom: 1px solid #eee; padding-bottom: 5px;
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        .form-section h2 .btn-limpar {
-            font-size: 0.8rem; font-weight: normal; padding: 2px 8px;
-            border: 1px solid #dc3545; color: #dc3545; background: #fff;
-            border-radius: 4px; cursor: pointer;
-        }
-        .form-section h2 .btn-limpar:hover { background: #dc3545; color: #fff; }
-
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.9rem; color: #555; }
-        .form-group input[type="text"] { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 80px; gap: 10px; }
-        .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-        .grid-4 label, .grid-2 label, .grid-3 label { font-size: 0.8rem; }
-        #gerar-pdf { display: block; width: 100%; padding: 12px; color: white; border: none; border-radius: 4px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: background-color 0.3s ease; background-color: #007bff; }
-        #gerar-pdf:hover:not(:disabled) { background-color: #0056b3; }
-        #gerar-pdf:disabled { background-color: #aaa; cursor: not-allowed; }
-        
-        /* --- CORREÇÃO DE LAYOUT --- */
-        #preview-container { 
-            flex: 1; 
-            display: flex; 
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            align-items: flex-start;
             justify-content: center;
-            min-width: 160mm; /* <<< CORREÇÃO: Garante que o container não seja espremido */
+            /* Centraliza o conteúdo */
+            gap: 30px;
+            padding: 20px;
+            font-size: 14px;
+            flex-wrap: wrap;
+            /* <<< CORREÇÃO: Faz o preview quebrar para baixo em telas pequenas */
         }
-        
+
+        #form-container {
+            flex: 0 0 450px;
+            background: #ffffff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            position: sticky;
+            top: 20px;
+            max-height: 95vh;
+            overflow-y: auto;
+        }
+
+        #form-container h1 {
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: 25px;
+            font-size: 1.5rem;
+            color: #333;
+            /* NOVO: Estilo para o H1 conter o botão de Sair */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* NOVO: Botão de Sair (Logout) */
+        #btn-logout {
+            font-size: 0.8rem;
+            font-weight: bold;
+            padding: 5px 10px;
+            border: 1px solid #dc3545;
+            color: #dc3545;
+            background: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        #btn-logout:hover {
+            background: #dc3545;
+            color: #fff;
+        }
+
+        .form-section {
+            margin-bottom: 20px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 20px;
+        }
+
+        .form-section:last-of-type {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .form-section h2 {
+            font-size: 1.1rem;
+            color: #333;
+            margin-top: 0;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .form-section h2 .btn-limpar {
+            font-size: 0.8rem;
+            font-weight: normal;
+            padding: 2px 8px;
+            border: 1px solid #dc3545;
+            color: #dc3545;
+            background: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .form-section h2 .btn-limpar:hover {
+            background: #dc3545;
+            color: #fff;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            color: #555;
+        }
+
+        .form-group input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 80px;
+            gap: 10px;
+        }
+
+        /* * ## MELHORIA: A regra '.grid-4' foi removida pois não era usada 
+         * e sua definição estava incorreta (copiada do grid-3).
+         */
+
+        /* NOVO: Grid-4 ajustado para 4 colunas + botão */
+        .grid-4-dinamico {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr 30px;
+            /* 4 campos + 1 botão */
+            gap: 10px;
+            align-items: flex-end;
+            /* Alinha o botão na base */
+        }
+
+        .grid-4-dinamico .form-group {
+            margin-bottom: 0;
+        }
+
+        /* Remove margem interna */
+
+        /* ## MELHORIA: A regra '.grid-4 label' foi substituída por '.grid-4-dinamico label' */
+        .grid-4-dinamico label,
+        .grid-2 label,
+        .grid-3 label {
+            font-size: 0.8rem;
+        }
+
+        #gerar-pdf {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            background-color: #007bff;
+        }
+
+        #gerar-pdf:hover:not(:disabled) {
+            background-color: #0056b3;
+        }
+
+        #gerar-pdf:disabled {
+            background-color: #aaa;
+            cursor: not-allowed;
+        }
+
+        /* --- CORREÇÃO DE LAYOUT --- */
+        #preview-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            min-width: 160mm;
+            /* <<< CORREÇÃO: Garante que o container não seja espremido */
+        }
+
         /* CSS do Documento da v7 */
-        #documento-completo { 
-            width: 160mm; /* Largura do conteúdo */
-            padding: 0; margin: 0; background: #ffffff; 
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); 
-            box-sizing: border-box; 
-            font-family: 'Times New Roman', Times, serif; 
-            color: #000; font-size: 10pt; line-height: 1.5; 
+        #documento-completo {
+            width: 160mm;
+            /* Largura do conteúdo */
+            padding: 0;
+            margin: 0;
+            background: #ffffff;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            box-sizing: border-box;
+            font-family: 'Times New Roman', Times, serif;
+            color: #000;
+            font-size: 10pt;
+            line-height: 1.5;
         }
-        .variavel { font-weight: bold; color: #0d47a1; transition: color 0.3s ease; }
-        .generating-pdf .variavel { color: #000; font-weight: normal; }
-        #documento-completo p { text-align: left; margin-bottom: 15px; text-indent: 50px; word-wrap: break-word; }
-        #documento-completo .no-indent { text-indent: 0; }
-        #documento-completo .clausula { font-weight: bold; text-transform: uppercase; margin-top: 20px; margin-bottom: 10px; text-indent: 0; }
-        #documento-completo .paragrafo { margin-left: 25px; text-indent: 0; }
-        #documento-completo .data-local { text-align: center; margin-top: 30px; text-indent: 0; page-break-inside: avoid !important; }
-        .preview-table { width: 100%; border-collapse: collapse; font-size: 9pt; margin-bottom: 15px; page-break-inside: avoid !important; }
-        .preview-table td { border: 1px solid #000; padding: 4px 6px; vertical-align: top; }
-        .preview-table-dados td:first-child { font-weight: bold; width: 150px; }
-        .preview-table-contratos th { border: 1px solid #000; padding: 4px; font-weight: bold; text-align: center; background-color: #f2f2f2; }
-        .preview-table-contratos td { text-align: center; }
-        .assinatura-bloco { margin-top: 40px; text-indent: 0; display: flex; justify-content: space-between; font-weight: bold; page-break-inside: avoid !important; }
-        .assinatura-bloco span { text-align: center; }
-        .assinatura-bloco .contratado { text-align: right; }
-        
+
+        /*
+         * 'position' e 'top' removidos daqui na correção anterior
+         * para garantir o alinhamento correto em TODAS as tabelas.
+         */
+        .variavel {
+            font-weight: bold;
+            color: #0d47a1;
+            transition: color 0.3s ease;
+            display: inline;
+            line-height: 1.2;
+            /* 'position' e 'top' removidos para alinhamento correto */
+        }
+
+        .generating-pdf .variavel {
+            color: #000;
+            font-weight: normal;
+        }
+
+        #documento-completo p {
+            text-align: left;
+            margin-bottom: 15px;
+            text-indent: 50px;
+            word-wrap: break-word;
+        }
+
+        #documento-completo .no-indent {
+            text-indent: 0;
+        }
+
+        #documento-completo .clausula {
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            text-indent: 0;
+        }
+
+        #documento-completo .paragrafo {
+            margin-left: 25px;
+            text-indent: 0;
+        }
+
+        #documento-completo .data-local {
+            text-align: center;
+            margin-top: 30px;
+            text-indent: 0;
+            page-break-inside: avoid !important;
+        }
+
+        .preview-table {
+            width: 100%;
+            table-layout: fixed;
+            /* Força colunas e corrige o placeholder */
+            border-collapse: collapse;
+            margin-bottom: 15px;
+            /* Espaça as tabelas (ex: Empresa e Contratos) */
+        }
+
+        .preview-table-contratos {
+            table-layout: fixed;
+        }
+
+        /* --- NOVO: Correção de Quebra de Página em Tabelas Longas --- */
+        .preview-table-contratos thead {
+            display: table-header-group;
+            /* Repete o cabeçalho na nova pág */
+        }
+
+        .preview-table-contratos tbody tr {
+            page-break-inside: avoid;
+        }
+
+        /* * ## MELHORIA: A regra duplicada de '.preview-table td' foi removida.
+         * Esta é a única regra que está sendo usada.
+         */
+        .preview-table td {
+            border: 1px solid #000;
+            padding: 4px 6px;
+            vertical-align: top;
+        }
+
+        .preview-table-dados td:first-child {
+            font-weight: bold;
+            width: 150px;
+        }
+
+        .preview-table-contratos th {
+            border: 1px solid #000;
+            padding: 4px;
+            font-weight: bold;
+            text-align: center;
+            background-color: #f2f2f2;
+        }
+
+        /* * ####################################
+         * ###    A CORREÇÃO ESTÁ AQUI     ###
+         * ####################################
+         *
+         * Trocado 'white-space: nowrap' por 'normal'
+         * para permitir a quebra de linha em células
+         * com texto longo, como visto na imagem.
+         */
+        .preview-table-contratos td {
+            text-align: center;
+            white-space: normal;
+            /* Permite a quebra de linha */
+            overflow-wrap: break-word;
+            /* Força a quebra de palavras/números longos */
+        }
+
+        /* NOVO: Estilo para linha placeholder da tabela */
+        .placeholder-row td {
+            color: #999;
+            text-align: center;
+            font-style: italic;
+        }
+
+        .assinatura-bloco {
+            margin-top: 40px;
+            text-indent: 0;
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            page-break-inside: avoid !important;
+        }
+
+        #primeira-assinatura {
+            page-break-after: always;
+        }
+
+        .assinatura-bloco span {
+            text-align: center;
+        }
+
+        .assinatura-bloco .contratado {
+            text-align: right;
+        }
+
         /* Toast (Notificações) */
-        .toast-container { position: fixed; top: 20px; right: 20px; z-index: 1090; }
-        .toast { width: 350px; max-width: 90%; background-color: #333; color: white; padding: 15px; border-radius: 5px; margin-bottom: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); opacity: 0; transition: opacity 0.3s, transform 0.3s; transform: translateX(100%); }
-        .toast.show { opacity: 1; transform: translateX(0); }
-        .toast.bg-success { background-color: #198754; } 
-        .toast.bg-danger { background-color: #dc3545; }
-        .toast.bg-warning { background-color: #ffc107; color: #000; }
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1090;
+        }
+
+        .toast {
+            width: 350px;
+            max-width: 90%;
+            background-color: #333;
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            transition: opacity 0.3s, transform 0.3s;
+            transform: translateX(100%);
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .toast.bg-success {
+            background-color: #198754;
+        }
+
+        .toast.bg-danger {
+            background-color: #dc3545;
+        }
+
+        .toast.bg-warning {
+            background-color: #ffc107;
+            color: #000;
+        }
 
         /* Estilos CSS para o Leitor de PDF (adaptado da calculadora) */
-        .upload-area { 
-            border: 2px dashed #007bff; padding: 20px; text-align: center; 
-            cursor: pointer; background-color: #f8f9fa; 
-            transition: background-color 0.2s, border-color 0.2s; 
-            border-radius: 8px; margin-bottom: 15px;
+        .upload-area {
+            border: 2px dashed #007bff;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            background-color: #f8f9fa;
+            transition: background-color 0.2s, border-color 0.2s;
+            border-radius: 8px;
+            margin-bottom: 15px;
         }
-        .upload-area.hover { background-color: #e9ecef; border-color: #0056b3; }
-        #pdf-upload { display: none; }
-        .upload-area span { font-weight: bold; color: #007bff; }
+
+        .upload-area.hover {
+            background-color: #e9ecef;
+            border-color: #0056b3;
+        }
+
+        #pdf-upload {
+            display: none;
+        }
+
+        .upload-area span {
+            font-weight: bold;
+            color: #007bff;
+        }
 
         #loading-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.6); z-index: 2000;
-            display: none; /* Alterado para 'none' */
-            justify-content: center; align-items: center;
-            flex-direction: column; color: white;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 2000;
+            display: none;
+            /* Alterado para 'none' */
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            color: white;
         }
+
         .spinner {
-            width: 40px; height: 40px; border: 4px solid #f3f3f3;
-            border-top: 4px solid #007bff; border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
             animation: spin 1s linear infinite;
         }
-        #loading-text { margin-top: 15px; font-size: 1.1rem; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
+
+        #loading-text {
+            margin-top: 15px;
+            font-size: 1.1rem;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
         /* Modal para Seleção de Contratos */
         #contract-modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.6); z-index: 1050;
-            display: none; /* Começa escondido */
-            justify-content: center; align-items: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 1050;
+            display: none;
+            /* Começa escondido */
+            justify-content: center;
+            align-items: center;
         }
+
         #contract-modal {
-            background: #fff; border-radius: 8px;
-            width: 90%; max-width: 600px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            display: flex; flex-direction: column;
+            background: #fff;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
             max-height: 80vh;
         }
+
         #contract-modal-header {
-            padding: 15px 20px; border-bottom: 1px solid #eee;
+            padding: 15px 20px;
+            border-bottom: 1px solid #eee;
         }
-        #contract-modal-header h3 { margin: 0; font-size: 1.25rem; }
+
+        #contract-modal-header h3 {
+            margin: 0;
+            font-size: 1.25rem;
+        }
+
         #contract-modal-body {
-            padding: 20px; overflow-y: auto;
+            padding: 20px;
+            overflow-y: auto;
         }
+
         #contract-list .form-check {
-            display: block; padding: 10px 12px;
+            display: block;
+            padding: 10px 12px;
             border-bottom: 1px solid #f0f0f0;
-            cursor: pointer; border-radius: 4px;
+            cursor: pointer;
+            border-radius: 4px;
         }
-        #contract-list .form-check:last-child { border-bottom: none; }
-        #contract-list .form-check:hover { background-color: #f8f9fa; }
-        #contract-list .form-check input { margin-right: 10px; }
-        #contract-list .form-check label { cursor: pointer; display: block; }
-        #contract-list .form-check small { color: #555; }
-        .form-check.select-all { font-weight: bold; background-color: #f0f2f5; }
+
+        #contract-list .form-check:last-child {
+            border-bottom: none;
+        }
+
+        #contract-list .form-check:hover {
+            background-color: #f8f9fa;
+        }
+
+        #contract-list .form-check input {
+            margin-right: 10px;
+        }
+
+        #contract-list .form-check label {
+            cursor: pointer;
+            display: block;
+        }
+
+        #contract-list .form-check small {
+            color: #555;
+        }
+
+        .form-check.select-all {
+            font-weight: bold;
+            background-color: #f0f2f5;
+        }
 
         #contract-modal-footer {
-            padding: 15px 20px; border-top: 1px solid #eee;
-            display: flex; justify-content: flex-end; gap: 10px;
+            padding: 15px 20px;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
         }
+
         .modal-btn {
-            padding: 8px 15px; border: none; border-radius: 4px;
-            cursor: pointer; font-weight: bold;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
         }
-        .btn-primary { background-color: #007bff; color: white; }
-        .btn-primary:hover { background-color: #0056b3; }
-        .btn-secondary { background-color: #6c757d; color: white; }
-        .btn-secondary:hover { background-color: #5a6268; }
+
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
 
         /* Estilos CSS do gerador de PDF nativo */
-        @media print, (min-width: 0px) {
-            .jsPDF-native-generating { display: block; background-color: #fff; padding: 0; margin: 0; }
+        @media print,
+        (min-width: 0px) {
+            .jsPDF-native-generating {
+                display: block;
+                background-color: #fff;
+                padding: 0;
+                margin: 0;
+            }
+
             .jsPDF-native-generating #form-container,
             .jsPDF-native-generating #toast-container,
             .jsPDF-native-generating #loading-overlay,
-            .jsPDF-native-generating #contract-modal-overlay { display: none; }
-            .jsPDF-native-generating #preview-container { flex: none; justify-content: flex-start; margin: 0; padding: 0; }
-            .jsPDF-native-generating #documento-completo { box-shadow: none; margin: 0; }
+            .jsPDF-native-generating #contract-modal-overlay {
+                display: none;
+            }
+
+            .jsPDF-native-generating #preview-container {
+                flex: none;
+                justify-content: center;
+                margin: 0;
+                padding: 0;
+            }
+
+            .jsPDF-native-generating #documento-completo {
+                box-shadow: none;
+                margin: 0;
+            }
+        }
+
+        /* --- NOVO: Estilos para botões dinâmicos --- */
+        #btn-add-contrato {
+            width: 100%;
+            margin-top: 15px;
+            padding: 10px;
+            background: #e6f7ff;
+            border: 1px dashed #007bff;
+            color: #007bff;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        #btn-add-contrato:hover {
+            background: #d0ebff;
+        }
+
+        .btn-remover-contrato {
+            background: #dc3545;
+            color: white;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding-bottom: 3px;
+        }
+
+        .btn-remover-contrato:hover {
+            background: #c82333;
         }
     </style>
 </head>
+
 <body>
-    
+
     <div class="toast-container" id="toast-container"></div>
 
     <div id="loading-overlay">
@@ -198,15 +656,16 @@
     <div id="contract-modal-overlay">
         <div id="contract-modal">
             <div id="contract-modal-header">
-                <h3>Selecione os Contratos (Máx. 4)</h3>
+                <h3>Selecione os Contratos</h3>
             </div>
             <div id="contract-modal-body">
-                <div id="infoClienteModal" class="p-2 mb-3" style="background: #f0f2f5; border-radius: 4px; border: 1px solid #ddd; display: none;">
+                <div id="infoClienteModal" class="p-2 mb-3"
+                    style="background: #f0f2f5; border-radius: 4px; border: 1px solid #ddd; display: none;">
                     <p class="mb-1"><strong>Cliente:</strong> <span id="modal-nome-cliente"></span></p>
                     <p class="mb-0"><strong>CPF:</strong> <span id="modal-cpf-cliente"></span></p>
                 </div>
                 <div id="contract-list">
-                    </div>
+                </div>
             </div>
             <div id="contract-modal-footer">
                 <button id="modal-cancel-btn" class="modal-btn btn-secondary">Cancelar</button>
@@ -217,38 +676,367 @@
 
 
     <div id="form-container">
-        <h1>Gerar Termo</h1>
-        
+        <h1>
+            Gerar Termo
+            <button id="btn-logout" title="Sair do sistema">Sair</button>
+        </h1>
+
         <div class="form-section">
             <h2>Dados do Cliente</h2>
-            <div class="form-group"> <label for="nome-cliente">Nome Completo:</label> <input type="text" id="nome-cliente" placeholder="Carlos Jorge Ferreira Lopes"> </div> <div class="grid-2"> <div class="form-group"><label for="cpf-cliente">CPF:</label><input type="text" id="cpf-cliente" placeholder="241.210.456-53"></div> <div class="form-group"><label for="rg-cliente">RG:</label><input type="text" id="rg-cliente" placeholder="1568.146"></div> </div> <div class="grid-2"> <div class="form-group"><label for="rg-emissor">Órgão Expedidor:</label><input type="text" id="rg-emissor" placeholder="SSP-MG"></div> <div class="form-group"><label for="naturalidade">Naturalidade:</label><input type="text" id="naturalidade" placeholder="BELO HORIZONTE-MG"></div> </div> <div class="grid-2"> <div class="form-group"><label for="estado-civil">Estado Civil:</label><input type="text" id="estado-civil" placeholder="VIÚVO"></div> <div class="form-group"><label for="profissao">Profissão:</label><input type="text" id="profissao" placeholder="AGENTE DE SAUDE PUBLICA"></div> </div> <div class="form-group"> <label for="orgao-vinculado">Vinculado ao Órgão:</label> <input type="text" id="orgao-vinculado" placeholder="MINISTERIO DA SAÚDE"> </div> <div class="grid-2"> <div class="form-group"><label for="nome-pai">Nome do Pai:</label><input type="text" id="nome-pai" placeholder="(Opcional)"></div> <div class="form-group"><label for="nome-mae">Nome da Mãe:</label><input type="text" id="nome-mae" placeholder="JOVENTINA FERRERA LOPES"></div> </div> <div class="grid-2"> <div class="form-group"><label for="telefone">Telefone/Whatsapp:</label><input type="text" id="telefone" placeholder="(38) 991058881"></div> <div class="form-group"><label for="email">E-mail:</label><input type="text" id="email" placeholder="carlosjorge57@yahoo.com.br"></div> </div> <div class="form-group"><label for="logradouro">Logradouro:</label><input type="text" id="logradouro" placeholder="Rua E número 340"></div> <div class="form-group"><label for="bairro">Bairro:</label><input type="text" id="bairro" placeholder="Residencial Lagoa do Velho Chico"></div> <div class="grid-3"> <div class="form-group"><label for="cidade">Cidade:</label><input type="text" id="cidade" placeholder="JANUARIA-MG"></div> <div class="form-group"><label for="estado">Estado:</label><input type="text" id="estado" placeholder="MG"></div> <div class="form-group"><label for="cep">CEP:</label><input type="text" id="cep" placeholder="39480000"></div> </div>
+            <div class="form-group"> <label for="nome-cliente">Nome Completo:</label> <input type="text"
+                    id="nome-cliente" placeholder="Carlos Jorge Ferreira Lopes"> </div>
+            <div class="grid-2">
+                <div class="form-group"><label for="cpf-cliente">CPF:</label><input type="text" id="cpf-cliente"
+                        placeholder="241.210.456-53"></div>
+                <div class="form-group"><label for="rg-cliente">RG:</label><input type="text" id="rg-cliente"
+                        placeholder="1568.146"></div>
+            </div>
+            <div class="grid-2">
+                <div class="form-group"><label for="rg-emissor">Órgão Expedidor:</label><input type="text"
+                        id="rg-emissor" placeholder="SSP-MG"></div>
+                <div class="form-group"><label for="naturalidade">Naturalidade:</label><input type="text"
+                        id="naturalidade" placeholder="BELO HORIZONTE-MG"></div>
+            </div>
+            <div class="grid-2">
+                <div class="form-group"><label for="estado-civil">Estado Civil:</label><input type="text"
+                        id="estado-civil" placeholder="VIÚVO"></div>
+                <div class="form-group"><label for="profissao">Profissão:</label><input type="text" id="profissao"
+                        placeholder="AGENTE DE SAUDE PUBLICA"></div>
+            </div>
+            <div class="form-group"> <label for="orgao-vinculado">Vinculado ao Órgão:</label> <input type="text"
+                    id="orgao-vinculado" placeholder="MINISTERIO DA SAÚDE"> </div>
+            <div class="grid-2">
+                <div class="form-group"><label for="nome-pai">Nome do Pai:</label><input type="text" id="nome-pai"
+                        placeholder="(Opcional)"></div>
+                <div class="form-group"><label for="nome-mae">Nome da Mãe:</label><input type="text" id="nome-mae"
+                        placeholder="JOVENTINA FERRERA LOPES"></div>
+            </div>
+            <div class="grid-2">
+                <div class="form-group"><label for="telefone">Telefone/Whatsapp:</label><input type="text" id="telefone"
+                        placeholder="(38) 991058881"></div>
+                <div class="form-group"><label for="email">E-mail:</label><input type="text" id="email"
+                        placeholder="carlosjorge57@yahoo.com.br"></div>
+            </div>
+            <div class="form-group"><label for="logradouro">Logradouro:</label><input type="text" id="logradouro"
+                    placeholder="Rua E número 340"></div>
+            <div class="form-group"><label for="bairro">Bairro:</label><input type="text" id="bairro"
+                    placeholder="Residencial Lagoa do Velho Chico"></div>
+            <div class="grid-3">
+                <div class="form-group"><label for="cidade">Cidade:</label><input type="text" id="cidade"
+                        placeholder="JANUARIA-MG"></div>
+                <div class="form-group"><label for="estado">Estado:</label><input type="text" id="estado"
+                        placeholder="MG"></div>
+                <div class="form-group"><label for="cep">CEP:</label><input type="text" id="cep" placeholder="39480000">
+                </div>
+            </div>
         </div>
 
         <div class="form-section">
-            <h2>Contratos a Quitar (Máx. 4) <button class="btn-limpar" id="limpar-contratos-btn">Limpar</button></h2>
+            <h2>Contratos a Quitar <button class="btn-limpar" id="limpar-contratos-btn">Limpar</button></h2>
 
             <input type="file" id="pdf-upload" accept=".pdf">
             <label for="pdf-upload" class="upload-area" id="upload-label">
                 <span>Clique ou arraste o Extrato PDF aqui</span>
             </label>
-            <div class="grid-4"> <div class="form-group"><label>Banco 1:</label><input type="text" id="banco-quitar-1" placeholder="BCO INBURSA"></div> <div class="form-group"><label>Parcela 1:</label><input type="text" id="parcela-quitar-1" placeholder="R$ 141,40" class="campo-moeda"></div> <div class="form-group"><label>Contrato 1:</label><input type="text" id="contrato-quitar-1" placeholder="Nº do Contrato"></div> <div class="form-group"><label>Pagas/Total 1:</label><input type="text" id="pagas-quitar-1" placeholder="56/96"></div> </div> <div class="grid-4"> <div class="form-group"><label>Banco 2:</label><input type="text" id="banco-quitar-2" placeholder="BCO PAN"></div> <div class="form-group"><label>Parcela 2:</label><input type="text" id="parcela-quitar-2" placeholder="R$ 288,40" class="campo-moeda"></div> <div class="form-group"><label>Contrato 2:</label><input type="text" id="contrato-quitar-2" placeholder="Nº do Contrato"></div> <div class="form-group"><label>Pagas/Total 2:</label><input type="text" id="pagas-quitar-2" placeholder="10/96"></div> </div> <div class="grid-4"> <div class="form-group"><label>Banco 3:</label><input type="text" id="banco-quitar-3" placeholder="BCO SANTANDER"></div> <div class="form-group"><label>Parcela 3:</label><input type="text" id="parcela-quitar-3" placeholder="R$ 995,31" class="campo-moeda"></div> <div class="form-group"><label>Contrato 3:</label><input type="text" id="contrato-quitar-3" placeholder="Nº do Contrato"></div> <div class="form-group"><label>Pagas/Total 3:</label><input type="text" id="pagas-quitar-3" placeholder="10/96"></div> </div> <div class="grid-4"> <div class="form-group"><label>Banco 4:</label><input type="text" id="banco-quitar-4" placeholder="BCO SANTANDER"></div> <div class="form-group"><label>Parcela 4:</label><input type="text" id="parcela-quitar-4" placeholder="R$ 476,40" class="campo-moeda"></div> <div class="form-group"><label>Contrato 4:</label><input type="text" id="contrato-quitar-4" placeholder="Nº do Contrato"></div> <div class="form-group"><label>Pagas/Total 4:</label><input type="text" id="pagas-quitar-4" placeholder="10/96"></div> </div>
+
+            <div id="contratos-dinamicos-container"
+                style="display: flex; flex-direction: column; gap: 15px; margin-top:15px;">
+            </div>
+
+            <button type="button" id="btn-add-contrato">
+                + Adicionar Contrato Manualmente
+            </button>
         </div>
 
         <div class="form-section">
-            <h2>Valores da Operação (Cláusula 1)</h2> <div class="grid-2"> <div class="form-group"><label for="banco-novo">Banco Novo:</label><input type="text" id="banco-novo" placeholder="BRADESCO S.A"></div> <div class="form-group"><label for="parcela-nova">Parcela Nova:</label><input type="text" id="parcela-nova" placeholder="R$ 1.901,51" class="campo-moeda"></div> </div> <div class="grid-2"> <div class="form-group"><label for="valor-devedor-tabela">Valor Devedor (Tabela):</label><input type="text" id="valor-devedor-tabela" placeholder="R$ 85.500,00" class="campo-moeda"></div> <div class="form-group"><label for="valor-liquido-cliente-tabela">Valor Cliente (Tabela):</label><input type="text" id="valor-liquido-cliente-tabela" placeholder="R$ 8.000,00" class="campo-moeda"></div> </div> <div class="form-group"><label for="prazo-novo">Prazo Novo:</label><input type="text" id="prazo-novo" placeholder="96X"></div> <hr style="border: 0; border-top: 1px solid #eee; margin: 15px 0;"> <div class="form-group"><label for="valor-total-aproximado">Valor Total Aprox. Contrato:</label><input type="text" id="valor-total-aproximado" placeholder="14.600,00" class="campo-moeda"></div> <div class="form-group"><label for="valor-liquido-cliente-texto">Valor Líquido Cliente (Texto):</label><input type="text" id="valor-liquido-cliente-texto" placeholder="R$ 8.000,00" class="campo-moeda"></div> <div class="form-group"><label for="valor-repassar-empresa">Valor Repasse Empresa (Restituição):</label><input type="text" id="valor-repassar-empresa" placeholder="R$ 6.600,00" class="campo-moeda"></div>
+            <h2>Valores da Operação (Cláusula 1)</h2>
+            <div class="grid-2">
+                <div class="form-group"><label for="banco-novo">Banco Novo:</label><input type="text" id="banco-novo"
+                        placeholder="BRADESCO S.A" value="Bradesco S/A"></div>
+                <div class="form-group"><label for="parcela-nova">Parcela Nova:</label><input type="text"
+                        id="parcela-nova" placeholder="R$ 1.901,51" class="campo-moeda"></div>
+            </div>
+            <div class="grid-2">
+                <div class="form-group"><label for="valor-devedor-tabela">Valor Devedor (Tabela):</label><input
+                        type="text" id="valor-devedor-tabela" placeholder="R$ 85.500,00" class="campo-moeda"></div>
+                <div class="form-group"><label for="valor-liquido-cliente-tabela">Valor Cliente (Tabela):</label><input
+                        type="text" id="valor-liquido-cliente-tabela" placeholder="R$ 8.000,00" class="campo-moeda">
+                </div>
+            </div>
+            <div class="form-group"><label for="prazo-novo">Prazo Novo:</label><input type="text" id="prazo-novo"
+                    placeholder="96X" value="96x"></div>
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 15px 0;">
+            <div class="form-group"><label for="valor-total-aproximado">Valor Total Aprox. Contrato:</label><input
+                    type="text" id="valor-total-aproximado" placeholder="14.600,00" class="campo-moeda"></div>
+            <div class="form-group"><label for="valor-liquido-cliente-texto">Valor Líquido Cliente
+                    (Texto):</label><input type="text" id="valor-liquido-cliente-texto" placeholder="R$ 8.000,00"
+                    class="campo-moeda"></div>
+            <div class="form-group"><label for="valor-repassar-empresa">Valor Repasse Empresa
+                    (Restituição):</label><input type="text" id="valor-repassar-empresa" placeholder="R$ 6.600,00"
+                    class="campo-moeda"></div>
         </div>
         <div class="form-section">
-            <h2>Local e Data</h2> <div class="form-group"> <label for="local-data">Local e Data:</label> <input type="text" id="local-data" value=""> </div>
+            <h2>Local e Data</h2>
+            <div class="form-group"> <label for="local-data">Local e Data:</label> <input type="text" id="local-data"
+                    value=""> </div>
         </div>
         <button id="gerar-pdf">Gerar PDF</button>
     </div>
 
     <div id="preview-container">
         <div id="documento-completo">
-            <table class="preview-table preview-table-dados"> <tr><td colspan="2" style="text-align: center; font-weight: bold; background-color: #f2f2f2;">DADOS DO CLIENTE</td></tr> <tr> <td>Nome do Cliente:</td> <td><span id="doc-nome-cliente" class="variavel">[Nome Cliente]</span></td> </tr> <tr> <td>CPF do Cliente:</td> <td><span id="doc-cpf-cliente" class="variavel">[Cpf Cliente]</span></td> </tr> <tr> <td>RG:</td> <td><span id="doc-rg-cliente" class="variavel">[Rg Cliente]</span> Orgão Expedidor: <span id="doc-rg-emissor" class="variavel">[Rg Emissor]</span></td> </tr> <tr> <td>Naturalidade:</td> <td><span id="doc-naturalidade" class="variavel">[Naturalidade]</span></td> </tr> <tr> <td>Estado Civil:</td> <td><span id="doc-estado-civil" class="variavel">[Estado Civil]</span></td> </tr> <tr> <td>Profissão:</td> <td><span id="doc-profissao" class="variavel">[Profissao]</span></td> </tr> <tr> <td>Vinculado ao Órgão:</td> <td><span id="doc-orgao-vinculado" class="variavel">[Orgao Vinculado]</span></td> </tr> <tr> <td>Nome do Pai:</td> <td><span id="doc-nome-pai" class="variavel">[Nome Pai]</span></td> </tr> <tr> <td>Nome da Mãe:</td> <td><span id="doc-nome-mae" class="variavel">[Nome Mae]</span></td> </tr> <tr> <td>Tel./Whatsapp:</td> <td><span id="doc-telefone" class="variavel">[Telefone]</span> E-mail: <span id="doc-email" class="variavel">[Email]</span></td> </tr> <tr> <td>Logradouro:</td> <td><span id="doc-logradouro" class="variavel">[Logradouro]</span></td> </tr> <tr> <td>Bairro:</td> <td><span id="doc-bairro" class="variavel">[Bairro]</span></td> </tr> <tr> <td>Cidade:</td> <td><span id="doc-cidade" class="variavel">[Cidade]</span></td> </tr> <tr> <td>Estado:</td> <td><span id="doc-estado" class="variavel">[Estado]</span> CEP: <span id="doc-cep" class="variavel">[Cep]</span></td> </tr> </table> <table class="preview-table preview-table-dados"> <tr><td colspan="2" style="text-align: center; font-weight: bold; background-color: #f2f2f2;">DADOS DA EMPRESA</td></tr> <tr> <td>Razão Social:</td> <td>POLLO PROMOTORA LTDA</td> </tr> <tr> <td>CNPJ:</td> <td>44.906.703/0001-59</td> </tr> <tr> <td>Logradouro:</td> <td>CSE 06 LOTE 30 SALA 205</td> </tr> <tr> <td>Cidade:</td> <td>BRASÍLIA</td> </tr> <tr> <td>Estado:</td> <td>DF CEP: 72025065</td> </tr> </table> <table class="preview-table preview-table-contratos"> <thead><tr><th>BANCO A QUITAR</th><th>VALOR PARCELA</th><th>N DE CONTRATO</th><th>PAGAS/A VENCER</th></tr></thead> <tbody> <tr><td><span id="doc-banco-quitar-1" class="variavel">[Banco 1]</span></td><td><span id="doc-parcela-quitar-1" class="variavel">[Parcela 1]</span></td><td><span id="doc-contrato-quitar-1" class="variavel">[Contrato 1]</span></td><td><span id="doc-pagas-quitar-1" class="variavel">[Pagas 1]</span></td></tr> <tr><td><span id="doc-banco-quitar-2" class="variavel">[Banco 2]</span></td><td><span id="doc-parcela-quitar-2" class="variavel">[Parcela 2]</span></td><td><span id="doc-contrato-quitar-2" class="variavel">[Contrato 2]</span></td><td><span id="doc-pagas-quitar-2" class="variavel">[Pagas 2]</span></td></tr> <tr><td><span id="doc-banco-quitar-3" class="variavel">[Banco 3]</span></td><td><span id="doc-parcela-quitar-3" class="variavel">[Parcela 3]</span></td><td><span id="doc-contrato-quitar-3" class="variavel">[Contrato 3]</span></td><td><span id="doc-pagas-quitar-3" class="variavel">[Pagas 3]</span></td></tr> <tr><td><span id="doc-banco-quitar-4" class="variavel">[Banco 4]</span></td><td><span id="doc-parcela-quitar-4" class="variavel">[Parcela 4]</span></td><td><span id="doc-contrato-quitar-4" class="variavel">[Contrato 4]</span></td><td><span id="doc-pagas-quitar-4" class="variavel">[Pagas 4]</span></td></tr> </tbody> </table> <p class="no-indent" style="font-size: 8pt; text-align: center;">Reconheço e concordo que este contrato poderá ser assinado por reconhecimento de firma em cartório de notas ou de forma eletrônica, nos termos da MP 2.200, sendo tal assinatura aceita e admitida como válidas pelas partes. Conforme o disposto na referida MP, este Termo, quando assinado eletronicamente, é admitido como autêntico, íntegro e válido.</p> <div class="assinatura-bloco"> <span class="contratante">________________________________________<br><span id="doc-nome-cliente-ass-1" class="variavel">[Nome Cliente]</span><br>CONTRATANTE</span> <span class="contratado">________________________________________<br>POLLO PROMOTORA LTDA<br>CONTRATADO</span> </div> <p class="clausula">CLÁUSULA PRIMEIRA - DO VALOR</p> <table class="preview-table preview-table-contratos"> <thead><tr><th>BANCO NOVO</th><th>PARCELA NOVA</th><th>DEVEDOR</th><th>VALOR DO CLIENTE</th><th>PRAZO:</th></tr></thead> <tbody><tr><td><span id="doc-banco-novo" class="variavel">[Banco Novo]</span></td><td><span id="doc-parcela-nova" class="variavel">[Parcela Nova]</span></td><td><span id="doc-valor-devedor-tabela" class="variavel">[Valor Devedor]</span></td><td><span id="doc-valor-liquido-cliente-tabela" class="variavel">[Valor Cliente]</span></td><td><span id="doc-prazo-novo" class="variavel">[Prazo]</span></td></tr></tbody> </table> <p class="no-indent">Valor total aproximado do contrato na nova Instituição Financeira: <span id="doc-valor-total-aproximado" class="variavel">[Valor Total Aproximado]</span></p> <p class="no-indent">Valor líquido acordado para o cliente: <span id="doc-valor-liquido-cliente-texto" class="variavel">[Valor Liquido Cliente]</span></p> <p class="no-indent">Valor que o cliente irá repassar para a empresa a título de restituição do valor emprestado mais os valores de comissionamento e juros: <span id="doc-valor-repassar-empresa" class="variavel">[Valor Repassar Empresa]</span></p> 
-            <p class="paragrafo">– O DEVEDOR está ciente de que, após a assinatura deste instrumento, o valor, ora confessado, poderá ser diverso do informado na Item 1.1 desta Cláusula, pelo fato de que a quitação dos empréstimos, quando realizada de forma antecipada, poderá gerar descontos ou acréscimos no valor, sendo este fato de exclusiva responsabilidade da Instituição Financeira emissora do boleto de quitação, podendo esta inclusive se recusar a prosseguir na operação.</p> <p class="clausula">CLÁUSULA SEGUNDA - DO PAGAMENTO</p> <p>2.1 - O DEVEDOR reconhece como legítima a dívida, ora confessada, e declara ciente de que o presente instrumento atende todos os requisitos da lei. Declara-se ainda na presente oportunidade como DEVEDOR comprometendo-se a pagar o valor descriminado no item 1.1 da Cláusula Primeira.</p> <p class="paragrafo">Parágrafo Primeiro: O pagamento deverá ser realizado em PARCELA ÚNICA no ato de liberação dos valores disponibilizados na conta do DEVEDOR pela nova instituição financeira contratada. Não sendo possível efetuar a liberação dos valores, independentemente do motivo , o DEVEDOR terá o prazo máximo de 24 (vinte e quatro) horas , para efetuar o pagamento do valor confessado neste instrumento à CREDORA, por meio de transferência na seguinte conta:</p> <div style="padding-left: 50px; text-indent: 0; font-weight: bold; font-size: 9pt;"> BANCO: 001 (BANCO DO BRASIL)<br> AGÊNCIA: 4733-3<br> CONTA: 48859-3<br> PIX: vinicius@estilopromotora.com.br<br> CNPJ: 44.906.703/0001-59<br> TITULAR: POLLO PROMOTORA </div> <p class="paragrafo" style="margin-top: 15px;">Parágrafo Segundo: No caso de ocorrer a hipótese descrita no item 1.5, da Cláusula Primeira, deste instrumento, ou seja, a conclusão da operação resultar em alguma diferença de valor entre a recontratação e o recurso da CREDORA utilizado para fins de quitação do(s) contrato(s) bancário(s) anterior(es), o DEVEDOR terá o prazo de 05 (cinco) dias úteis para efetuar o adimplemento do saldo remanescente , por meio de transferência bancária, salvo melhor juízo entre as partes. O não pagamento no prazo acordado, enseja a aplicação das regras definidas na Cláusula Terceira deste instrumento.</p> <p class="clausula">CLÁUSULA TERCEIRA - DO INADIMPLEMENTO</p> <p>3.1 - Não havendo o pagamento do valor ora estipulado neste instrumento, na forma acordada no item 2.1 e parágrafos da Cláusula Segunda, fica DEVEDOR o constituído em mora, independentemente de interpelação judicial ou notificação, podendo a CREDORA efetuar o protesto da dívida no Cartório competente.</p> <p class="paragrafo">– O descumprimento deste acordo, seja total ou parcial , ensejará, a partir do inadimplento, o acréscimo de correção monetária , com base no índice INPC ou outro índice equivalente permitido em lei, juros de mora de 1% (um por cento) ao mês e multa moratória no importe de 10% (dez por cento) sobre o saldo devedor.</p> <p class="paragrafo">– Em caso de cobrança administrativa da dívida, será o valor inadimplido acrescido de honorários advocatícios na base de 10% (dez por cento) sobre o valor do débito autalizado.</p> <p class="paragrafo">– Fica ressalvado que caso fique evidenciada a ma-fé do DEVEDOR no inadimplemento das obrigações assumidas neste instrumento, a CREDORA efetuará as devidas comunicações dos fatos junto à respectiva autoridade policial, para fins de apuração de eventual crime e a subsequente aplicação das sanções criminais pertinentes.</p> <p class="paragrafo">– Em caso de inadimplemento, ainda, poderá a CREDORA incluir o nome do DEVEDOR nos cadastros de devedores do Serviço de Proteção ao Crédito (SPC, SERASA, etc.).</p> <p class="paragrafo">– A dívida, ora reconhecida e assumida pelo DEVEDOR como certa, líquida e exigível, no valor acima mencionado, aplica-se o disposto no art. 784, III, do CPC, haja vista o caráter de título executivo extrajudicial do presente instrumento de confissão de divida.– Havendo a confirmação do pagamento, a CREDORA compromete-se a dar baixa no que diz respeito exlcusivamente ao débito ora confessado, excluindo o nome do DEVEDOR do banco de dados do SPC, SERASA ou órgão que o valha.</p> <p class="clausula">CLÁUSULA QUARTA – DA MULTA POR ARREPENDIMENTO DO CONTRATO</p> <p>4.1 - Se qualquer das partes desistir expressamente do presente contrato, sem justo motivo, após a assinatura do mesmo, fica a parte infratora sujeita ao pagamento de multa no importe de 10% (dez por cento) sobre o valor da presente negociação, sem prejuízo de outras perdas e danos a serem apuradas.</p> <p class="clausula">CLÁUSULA QUINTA – DAS OBRIGAÇÕES DO DEVEDOR</p> <p class="paragrafo">Efetuar o pagamento na data fixada neste instrumento;</p> <p class="paragrafo">Informar a CREDORA sobre a insolvência civil, recuperação judicial ou extrajudicial, falência ou qualquer ação e execução declarada contra si;</p> <p class="paragrafo">Prestar todos os esclarecimentos e enviar os documentos necessários para a operação;</p> <p class="paragrafo">Encaminhar uma cópia legível destes termos por meio Whatsapp ao corretor e a via original destes termos, devidamente assinados e com firma reconhecida, para a sede da CREDORA, sendo o custo do envio a cargo do DEVEDOR;</p> <p class="paragrafo">Enviar o comprovante de envio deste instrumento e do termo de ciência para ciência da CREDORA e possibilitar o rastreio do objeto.</p> <p class="clausula">CLÁUSULA SEXTA – DAS OBRIGAÇÕES DO CREDOR</p> <p class="paragrafo">Receber o pagamento da dívida nos moldes estipulados neste termo;</p> <p class="paragrafo">Não divulgar a terceiros, nem utilizar quaisquer informações escritas ou verbais e/ou documentação do DEVEDOR, de que tome conhecimento, ou a que tenha acesso, conforme a Lei Geral de Proteção de Dados - LGPD e outras correlatas;</p> <p class="clausula">CLÁUSULA SÉTIMA – DAS DISPOSIÇÕES GERAIS</p> <p class="paragrafo">- O presente instrumento passa a vigorar entre as partes a partir da assinatura do mesmo.</p> <p class="paragrafo">- Em caso de ajuizamento de ação judicial todas as partes autorizam a citação e intimação via aplicativo WhatsApp, telegrama ou via e-mail, nos termos do artigo 190 do CPC.</p> <p class="paragrafo">As Partes reconhecem e concordam que este contrato poderá ser assinado por reconhecimento de firma em Cartório ou de forma eletrônica, nos termos da MP 2.200, sendo tal assinatura aceita e admitida como válidas pelas partes.</p> <p class="paragrafo">Conforme o disposto na referida MP, este contrato, quando assinado eletronicamente, é admitido pelas partes como autêntico, íntegro e válido.</p> <p class="paragrafo">- O presente instrumento em todos os seus termos é feito em caráter IRREVOGÁVEL E IRRETRATÁVEL, para ambas as partes, que prometem fazê-lo sempre bom, firme e valioso a todo tempo e lugar, respondendo pelos mesmos seus herdeiros e sucessores.</p> <p class="paragrafo">- A mera tolerância de uma das partes em relação ao descumprimento das cláusulas contidas neste instrumento ou o não exercício de qualquer direito nele previsto constituirá mera liberalidade, bem como não importará em renúncia, perdão, novação ou alteração da norma infringida.</p> <p class="paragrafo">- Este instrumento obriga igualmente todos os herdeiros e sucessores das partes, que deverão cumpri-lo em sua integralidade, qualquer que seja a forma de sucessão.</p> <p class="paragrafo">- As partes que assinam o presente documento confessam e declaram de forma expressa fazer a presente transação de livre e espontânea vontade, estando plenamente os envolvidos conscientes de suas condições físicas e mentais, não sofrendo qualquer interferência pôr parte de terceiros.</p> <p class="paragrafo">- Na hipótese de não pagamento e ocorrendo partilha de bens do DEVEDOR, fica a CREDORA, seus beneficiários, herdeiros e sucessores, autorizados a se habilitarem no processo de inventário e requererem junto ao cartório e/ou juiz competente o pagamento do débito, constante neste instrumento.</p> <p class="paragrafo">- O Devedor concorda em caráter irrevogável, irretratável e sem direito de arrependimento que, em caso de execução judicial, não havendo pagamento no prazo estipulado no Código de Processo Civil, o pagamento do débito será realizado mediante desconto em folha de pagamento (contracheque) em até 60 (sessenta) parcelas mensis e sucessivas, mesmo não havendo margem para consignação, que serão descontadas mediante ordem judicial.</p> <p class="paragrafo">- As partes ajustam e concordam que todas as notificações, citações, avisos ou comunicações exigidas, permitidas ou decorrentes deste contrato, por qualquer das partes contratantes a outra, deverão ser feitas por meio de e-mail, whatsapp, carta, com aviso de recebimento, todos dirigidos para os e-mails/telefones/endereços indicados na qualificação das partes, ou para aqueles que vierem a ser indicados por elas.</p> <p class="data-local"><span id="doc-local-data" class="variavel">[Local Data]</span></p> <div class="assinatura-bloco"> <span class="contratante">________________________________________<br><span id="doc-nome-cliente-ass-2" class="variavel">[Nome Cliente]</span><br>CONTRATANTE</span> <span class="contratado">________________________________________<br>POLLO PROMOTORA LTDA<br>CONTRATADO</span> </div>
-        </div> 
-    </div> 
+            <table class="preview-table preview-table-dados">
+                <tr>
+                    <td colspan="2" style="text-align: center; font-weight: bold; background-color: #f2f2f2;">DADOS DO
+                        CLIENTE</td>
+                </tr>
+                <tr>
+                    <td>Nome do Cliente:</td>
+                    <td><span id="doc-nome-cliente" class="variavel">[Nome Cliente]</span></td>
+                </tr>
+                <tr>
+                    <td>CPF do Cliente:</td>
+                    <td><span id="doc-cpf-cliente" class="variavel">[Cpf Cliente]</span></td>
+                </tr>
+                <tr>
+                    <td>RG:</td>
+                    <td><span id="doc-rg-cliente" class="variavel">[Rg Cliente]</span> Orgão Expedidor: <span
+                            id="doc-rg-emissor" class="variavel">[Rg Emissor]</span></td>
+                </tr>
+                <tr>
+                    <td>Naturalidade:</td>
+                    <td><span id="doc-naturalidade" class="variavel">[Naturalidade]</span></td>
+                </tr>
+                <tr>
+                    <td>Estado Civil:</td>
+                    <td><span id="doc-estado-civil" class="variavel">[Estado Civil]</span></td>
+                </tr>
+                <tr>
+                    <td>Profissão:</td>
+                    <td><span id="doc-profissao" class="variavel">[Profissao]</span></td>
+                </tr>
+                <tr>
+                    <td>Vinculado ao Órgão:</td>
+                    <td><span id="doc-orgao-vinculado" class="variavel">[Orgao Vinculado]</span></td>
+                </tr>
+                <tr>
+                    <td>Nome do Pai:</td>
+                    <td><span id="doc-nome-pai" class="variavel">[Nome Pai]</span></td>
+                </tr>
+                <tr>
+                    <td>Nome da Mãe:</td>
+                    <td><span id="doc-nome-mae" class="variavel">[Nome Mae]</span></td>
+                </tr>
+                <tr>
+                    <td>Tel./Whatsapp:</td>
+                    <td><span id="doc-telefone" class="variavel">[Telefone]</span> E-mail: <span id="doc-email"
+                            class="variavel">[Email]</span></td>
+                </tr>
+                <tr>
+                    <td>Logradouro:</td>
+                    <td><span id="doc-logradouro" class="variavel">[Logradouro]</span></td>
+                </tr>
+                <tr>
+                    <td>Bairro:</td>
+                    <td><span id="doc-bairro" class="variavel">[Bairro]</span></td>
+                </tr>
+                <tr>
+                    <td>Cidade:</td>
+                    <td><span id="doc-cidade" class="variavel">[Cidade]</span></td>
+                </tr>
+                <tr>
+                    <td>Estado:</td>
+                    <td><span id="doc-estado" class="variavel">[Estado]</span> CEP: <span id="doc-cep"
+                            class="variavel">[Cep]</span></td>
+                </tr>
+            </table>
+            <table class="preview-table preview-table-dados">
+                <tr>
+                    <td colspan="2" style="text-align: center; font-weight: bold; background-color: #f2f2f2;">DADOS DA
+                        EMPRESA</td>
+                </tr>
+                <tr>
+                    <td>Razão Social:</td>
+                    <td>POLLO PROMOTORA LTDA</td>
+                </tr>
+                <tr>
+                    <td>CNPJ:</td>
+                    <td>44.906.703/0001-59</td>
+                </tr>
+                <tr>
+                    <td>Logradouro:</td>
+                    <td>CSE 06 LOTE 30 SALA 205</td>
+                </tr>
+                <tr>
+                    <td>Cidade:</td>
+                    <td>BRASÍLIA</td>
+                </tr>
+                <tr>
+                    <td>Estado:</td>
+                    <td>DF CEP: 72025065</td>
+                </tr>
+            </table>
+
+            <table class="preview-table preview-table-contratos">
+                <thead>
+                    <tr>
+                        <th>BANCO A QUITAR</th>
+                        <th>VALOR PARCELA</th>
+                        <th>N DE CONTRATO</th>
+                        <th>PAGAS/A VENCER</th>
+                    </tr>
+                </thead>
+                <tbody id="doc-contratos-tbody">
+                    <tr class="placeholder-row">
+                        <td colspan="4">Nenhum contrato adicionado</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p class="no-indent" style="font-size: 8pt; text-align: center;">Reconheço e concordo que este contrato
+                poderá ser assinado por reconhecimento de firma em cartório de notas ou de forma eletrônica, nos termos
+                da MP 2.200, sendo tal assinatura aceita e admitida como válidas pelas partes. Conforme o disposto na
+                referida MP, este Termo, quando assinado eletronicamente, é admitido como autêntico, íntegro e válido.
+            </p>
+            <div class="assinatura-bloco" id="primeira-assinatura"> <span
+                    class="contratante">________________________________________<br><span id="doc-nome-cliente-ass-1"
+                        class="variavel">[Nome Cliente]</span><br>CONTRATANTE</span> <span
+                    class="contratado">________________________________________<br>POLLO PROMOTORA
+                    LTDA<br>CONTRATADO</span> </div>
+            <p class="clausula">CLÁUSULA PRIMEIRA - DO VALOR</p>
+            <table class="preview-table preview-table-contratos">
+                <thead>
+                    <tr>
+                        <th>BANCO NOVO</th>
+                        <th>PARCELA NOVA</th>
+                        <th>SALDO DEVEDOR</th>
+                        <th>VALOR DO CLIENTE</th>
+                        <th>PRAZO:</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span id="doc-banco-novo" class="variavel">[Banco Novo]</span></td>
+                        <td><span id="doc-parcela-nova" class="variavel">[Parcela Nova]</span></td>
+                        <td><span id="doc-valor-devedor-tabela" class="variavel">[Valor Devedor]</span></td>
+                        <td><span id="doc-valor-liquido-cliente-tabela" class="variavel">[Valor Cliente]</span></td>
+                        <td><span id="doc-prazo-novo" class="variavel">[Prazo]</span></td>
+                    </tr>
+                </tbody>
+            </table>
+            <p class="no-indent">Valor total aproximado do contrato na nova Instituição Financeira: <span
+                    id="doc-valor-total-aproximado" class="variavel">[Valor Total Aproximado]</span></p>
+            <p class="no-indent">Valor líquido acordado para o cliente: <span id="doc-valor-liquido-cliente-texto"
+                    class="variavel">[Valor Liquido Cliente]</span></p>
+            <p class="no-indent">Valor que o cliente irá repassar para a empresa a título de restituição do valor
+                emprestado mais os valores de comissionamento e juros: <span id="doc-valor-repassar-empresa"
+                    class="variavel">[Valor Repassar Empresa]</span></p>
+            <p class="paragrafo">– O DEVEDOR está ciente de que, após a assinatura deste instrumento, o valor, ora
+                confessado, poderá ser diverso do informado na Item 1.1 desta Cláusula, pelo fato de que a quitação dos
+                empréstimos, quando realizada de forma antecipada, poderá gerar descontos ou acréscimos no valor, sendo
+                este fato de exclusiva responsabilidade da Instituição Financeira emissora do boleto de quitação,
+                podendo esta inclusive se recusar a prosseguir na operação.</p>
+            <p class="clausula">CLÁUSULA SEGUNDA - DO PAGAMENTO</p>
+            <p>2.1 - O DEVEDOR reconhece como legítima a dívida, ora confessada, e declara ciente de que o presente
+                instrumento atende todos os requisitos da lei. Declara-se ainda na presente oportunidade como DEVEDOR
+                comprometendo-se a pagar o valor descriminado no item 1.1 da Cláusula Primeira.</p>
+            <p class="paragrafo">Parágrafo Primeiro: O pagamento deverá ser realizado em PARCELA ÚNICA no ato de
+                liberação dos valores disponibilizados na conta do DEVEDOR pela nova instituição financeira contratada.
+                Não sendo possível efetuar a liberação dos valores, independentemente do motivo , o DEVEDOR terá o prazo
+                máximo de 24 (vinte e quatro) horas , para efetuar o pagamento do valor confessado neste instrumento à
+                CREDORA, por meio de transferência na seguinte conta:</p>
+            <div style="padding-left: 50px; text-indent: 0; font-weight: bold; font-size: 9pt;"> BANCO: 001 (BANCO DO
+                BRASIL)<br> AGÊNCIA: 4733-3<br> CONTA: 48859-3<br> PIX: vinicius@estilopromotora.com.br<br> CNPJ:
+                44.906.703/0001-59<br> TITULAR: POLLO PROMOTORA </div>
+            <p class="paragrafo" style="margin-top: 15px;">Parágrafo Segundo: No caso de ocorrer a hipótese descrita no
+                item 1.5, da Cláusula Primeira, deste instrumento, ou seja, a conclusão da operação resultar em alguma
+                diferença de valor entre a recontratação e o recurso da CREDORA utilizado para fins de quitação do(s)
+                contrato(s) bancário(s) anterior(es), o DEVEDOR terá o prazo de 05 (cinco) dias úteis para efetuar o
+                adimplemento do saldo remanescente , por meio de transferência bancária, salvo melhor juízo entre as
+                partes. O não pagamento no prazo acordado, enseja a aplicação das regras definidas na Cláusula Terceira
+                deste instrumento.</p>
+            <p class="clausula">CLÁUSULA TERCEIRA - DO INADIMPLEMENTO</p>
+            <p>3.1 - Não havendo o pagamento do valor ora estipulado neste instrumento, na forma acordada no item 2.1 e
+                parágrafos da Cláusula Segunda, fica DEVEDOR o constituído em mora, independentemente de interpelação
+                judicial ou notificação, podendo a CREDORA efetuar o protesto da dívida no Cartório competente.</p>
+            <p class="paragrafo">– O descumprimento deste acordo, seja total ou parcial , ensejará, a partir do
+                inadimplento, o acréscimo de correção monetária , com base no índice INPC ou outro índice equivalente
+                permitido em lei, juros de mora de 1% (um por cento) ao mês e multa moratória no importe de 10% (dez por
+                cento) sobre o saldo devedor.</p>
+            <p class="paragrafo">– Em caso de cobrança administrativa da dívida, será o valor inadimplido acrescido de
+                honorários advocatícios na base de 10% (dez por cento) sobre o valor do débito autalizado.</p>
+            <p class="paragrafo">– Fica ressalvado que caso fique evidenciada a ma-fé do DEVEDOR no inadimplemento das
+                obrigações assumidas neste instrumento, a CREDORA efetuará as devidas comunicações dos fatos junto à
+                respectiva autoridade policial, para fins de apuração de eventual crime e a subsequente aplicação das
+                sanções criminais pertinentes.</p>
+            <p class="paragrafo">– Em caso de inadimplemento, ainda, poderá a CREDORA incluir o nome do DEVEDOR nos
+                cadastros de devedores do Serviço de Proteção ao Crédito (SPC, SERASA, etc.).</p>
+            <p class="paragrafo">– A dívida, ora reconhecida e assumida pelo DEVEDOR como certa, líquida e exigível, no
+                valor acima mencionado, aplica-se o disposto no art. 784, III, do CPC, haja vista o caráter de título
+                executivo extrajudicial do presente instrumento de confissão de divida.– Havendo a confirmação do
+                pagamento, a CREDORA compromete-se a dar baixa no que diz respeito exlcusivamente ao débito ora
+                confessado, excluindo o nome do DEVEDOR do banco de dados do SPC, SERASA ou órgão que o valha.</p>
+            <p class="clausula">CLÁUSULA QUARTA – DA MULTA POR ARREPENDIMENTO DO CONTRATO</p>
+            <p>4.1 - Se qualquer das partes desistir expressamente do presente contrato, sem justo motivo, após a
+                assinatura do mesmo, fica a parte infratora sujeita ao pagamento de multa no importe de 10% (dez por
+                cento) sobre o valor da presente negociação, sem prejuízo de outras perdas e danos a serem apuradas.</p>
+            <p class="clausula">CLÁUSULA QUINTA – DAS OBRIGAÇÕES DO DEVEDOR</p>
+            <p class="paragrafo">Efetuar o pagamento na data fixada neste instrumento;</p>
+            <p class="paragrafo">Informar a CREDORA sobre a insolvência civil, recuperação judicial ou extrajudicial,
+                falência ou qualquer ação e execução declarada contra si;</p>
+            <p class="paragrafo">Prestar todos os esclarecimentos e enviar os documentos necessários para a operação;
+            </p>
+            <p class="paragrafo">Encaminhar uma cópia legível destes termos por meio Whatsapp ao corretor e a via
+                original destes termos, devidamente assinados e com firma reconhecida, para a sede da CREDORA, sendo o
+                custo do envio a cargo do DEVEDOR;</p>
+            <p class="paragrafo">Enviar o comprovante de envio deste instrumento e do termo de ciência para ciência da
+                CREDORA e possibilitar o rastreio do objeto.</p>
+            <p class="clausula">CLÁUSULA SEXTA – DAS OBRIGAÇÕES DO CREDOR</p>
+            <p class="paragrafo">Receber o pagamento da dívida nos moldes estipulados neste termo;</p>
+            <p class="paragrafo">Não divulgar a terceiros, nem utilizar quaisquer informações escritas ou verbais e/ou
+                documentação do DEVEDOR, de que tome conhecimento, ou a que tenha acesso, conforme a Lei Geral de
+                Proteção de Dados - LGPD e outras correlatas;</p>
+            <p class="clausula">CLÁUSULA SÉTIMA – DAS DISPOSIÇÕES GERAIS</p>
+            <p class="paragrafo">- O presente instrumento passa a vigorar entre as partes a partir da assinatura do
+                mesmo.</p>
+            <p class="paragrafo">- Em caso de ajuizamento de ação judicial todas as partes autorizam a citação e
+                intimação via aplicativo WhatsApp, telegrama ou via e-mail, nos termos do artigo 190 do CPC.</p>
+            <p class="paragrafo">As Partes reconhecem e concordam que este contrato poderá ser assinado por
+                reconhecimento de firma em Cartório ou de forma eletrônica, nos termos da MP 2.200, sendo tal assinatura
+                aceita e admitida como válidas pelas partes.</p>
+            <p class="paragrafo">Conforme o disposto na referida MP, este contrato, quando assinado eletronicamente, é
+                admitido pelas partes como autêntico, íntegro e válido.</p>
+            <p class="paragrafo">- O presente instrumento em todos os seus termos é feito em caráter IRREVOGÁVEL E
+                IRRETRATÁVEL, para ambas as partes, que prometem fazê-lo sempre bom, firme e valioso a todo tempo e
+                lugar, respondendo pelos mesmos seus herdeiros e sucessores.</p>
+            <p class="paragrafo">- A mera tolerância de uma das partes em relação ao descumprimento das cláusulas
+                contidas neste instrumento ou o não exercício de qualquer direito nele previsto constituirá mera
+                liberalidade, bem como não importará em renúncia, perdão, novação ou alteração da norma infringida.</p>
+            <p class="paragrafo">- Este instrumento obriga igualmente todos os herdeiros e sucessores das partes, que
+                deverão cumpri-lo em sua integralidade, qualquer que seja a forma de sucessão.</p>
+            <p class="paragrafo">- As partes que assinam o presente documento confessam e declaram de forma expressa
+                fazer a presente transação de livre e espontânea vontade, estando plenamente os envolvidos conscientes
+                de suas condições físicas e mentais, não sofrendo qualquer interferência pôr parte de terceiros.</p>
+            <p class="paragrafo">- Na hipótese de não pagamento e ocorrendo partilha de bens do DEVEDOR, fica a CREDORA,
+                seus beneficiários, herdeiros e sucessores, autorizados a se habilitarem no processo de inventário e
+                requererem junto ao cartório e/ou juiz competente o pagamento do débito, constante neste instrumento.
+            </p>
+            <p class="paragrafo">- O Devedor concorda em caráter irrevogável, irretratável e sem direito de
+                arrependimento que, em caso de execução judicial, não havendo pagamento no prazo estipulado no Código de
+                Processo Civil, o pagamento do débito será realizado mediante desconto em folha de pagamento
+                (contracheque) em até 60 (sessenta) parcelas mensis e sucessivas, mesmo não havendo margem para
+                consignação, que serão descontadas mediante ordem judicial.</p>
+            <p class="paragrafo">- As partes ajustam e concordam que todas as notificações, citações, avisos ou
+                comunicações exigidas, permitidas ou decorrentes deste contrato, por qualquer das partes contratantes a
+                outra, deverão ser feitas por meio de e-mail, whatsapp, carta, com aviso de recebimento, todos dirigidos
+                para os e-mails/telefones/endereços indicados na qualificação das partes, ou para aqueles que vierem a
+                ser indicados por elas.</p>
+            <p class="data-local"><span id="doc-local-data" class="variavel">[Local Data]</span></p>
+            <div class="assinatura-bloco"> <span class="contratante">________________________________________<br><span
+                        id="doc-nome-cliente-ass-2" class="variavel">[Nome Cliente]</span><br>CONTRATANTE</span> <span
+                    class="contratado">________________________________________<br>POLLO PROMOTORA
+                    LTDA<br>CONTRATADO</span> </div>
+        </div>
+    </div>
 
 
     <script>
@@ -256,13 +1044,24 @@
         const { jsPDF } = window.jspdf;
 
         // === NOVO: Configuração do PDF.js (da Calculadora) ===
-        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.worker.min.js`;
+        // ## MELHORIA: Trocado template literal (`) por string simples (')
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.worker.min.js';
 
 
         // --- FUNÇÕES UTILITÁRIAS (Existentes) ---
-        const formatarMoeda = (v) => { if (typeof v === 'string') { if (v.startsWith('R$')) return v; v = moedaParaFloat(v); } return (v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" }); };
-        const moedaParaFloat = (v) => { return parseFloat(String(v || '').replace('R$', '').trim().replace(/\./g, "").replace(",", ".")) || 0; };
-        
+        // ## MELHORIA: Funções formatadas para melhor leitura
+        const formatarMoeda = (v) => {
+            if (typeof v === 'string') {
+                if (v.startsWith('R$')) return v;
+                v = moedaParaFloat(v);
+            }
+            return (v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+        };
+
+        const moedaParaFloat = (v) => {
+            return parseFloat(String(v || '').replace('R$', '').trim().replace(/\./g, "").replace(",", ".")) || 0;
+        };
+
         // Toast (Notificações)
         const showToast = (message, type = 'success') => {
             const toastContainer = document.getElementById('toast-container');
@@ -270,7 +1069,7 @@
             let bgClass = 'bg-success';
             if (type === 'danger') bgClass = 'bg-danger';
             if (type === 'warning') bgClass = 'bg-warning';
-            
+
             const toastEl = document.createElement('div');
             toastEl.id = toastId;
             toastEl.className = `toast ${bgClass}`;
@@ -284,49 +1083,94 @@
         };
 
         // --- FUNÇÃO ATUALIZAR PREVIEW (Existente) ---
+        // --- NOVO: FUNÇÃO ATUALIZAR PREVIEW (Refatorada para campos dinâmicos) ---
         function atualizarPreview() {
-            const campos = { 'nome-cliente': ['doc-nome-cliente', 'doc-nome-cliente-ass-1', 'doc-nome-cliente-ass-2'], 'cpf-cliente': ['doc-cpf-cliente'], 'rg-cliente': ['doc-rg-cliente'], 'rg-emissor': ['doc-rg-emissor'], 'naturalidade': ['doc-naturalidade'], 'estado-civil': ['doc-estado-civil'], 'profissao': ['doc-profissao'], 'orgao-vinculado': ['doc-orgao-vinculado'], 'nome-pai': ['doc-nome-pai'], 'nome-mae': ['doc-nome-mae'], 'telefone': ['doc-telefone'], 'email': ['doc-email'], 'logradouro': ['doc-logradouro'], 'bairro': ['doc-bairro'], 'cidade': ['doc-cidade'], 'estado': ['doc-estado'], 'cep': ['doc-cep'], 'banco-quitar-1': ['doc-banco-quitar-1'], 'parcela-quitar-1': ['doc-parcela-quitar-1'], 'contrato-quitar-1': ['doc-contrato-quitar-1'], 'pagas-quitar-1': ['doc-pagas-quitar-1'], 'banco-quitar-2': ['doc-banco-quitar-2'], 'parcela-quitar-2': ['doc-parcela-quitar-2'], 'contrato-quitar-2': ['doc-contrato-quitar-2'], 'pagas-quitar-2': ['doc-pagas-quitar-2'], 'banco-quitar-3': ['doc-banco-quitar-3'], 'parcela-quitar-3': ['doc-parcela-quitar-3'], 'contrato-quitar-3': ['doc-contrato-quitar-3'], 'pagas-quitar-3': ['doc-pagas-quitar-3'], 'banco-quitar-4': ['doc-banco-quitar-4'], 'parcela-quitar-4': ['doc-parcela-quitar-4'], 'contrato-quitar-4': ['doc-contrato-quitar-4'], 'pagas-quitar-4': ['doc-pagas-quitar-4'], 'banco-novo': ['doc-banco-novo'], 'parcela-nova': ['doc-parcela-nova'], 'valor-devedor-tabela': ['doc-valor-devedor-tabela'], 'valor-liquido-cliente-tabela': ['doc-valor-liquido-cliente-tabela'], 'prazo-novo': ['doc-prazo-novo'], 'valor-total-aproximado': ['doc-valor-total-aproximado'], 'valor-liquido-cliente-texto': ['doc-valor-liquido-cliente-texto'], 'valor-repassar-empresa': ['doc-valor-repassar-empresa'], 'local-data': ['doc-local-data'] };
-            const camposMoeda = [ 'parcela-quitar-1', 'parcela-quitar-2', 'parcela-quitar-3', 'parcela-quitar-4', 'parcela-nova', 'valor-devedor-tabela', 'valor-liquido-cliente-tabela', 'valor-total-aproximado', 'valor-liquido-cliente-texto', 'valor-repassar-empresa' ];
-            
+            // Parte 1: Campos Estáticos (Cliente, Valores da Operação)
+            const campos = {
+                'nome-cliente': ['doc-nome-cliente', 'doc-nome-cliente-ass-1', 'doc-nome-cliente-ass-2'], 'cpf-cliente': ['doc-cpf-cliente'], 'rg-cliente': ['doc-rg-cliente'], 'rg-emissor': ['doc-rg-emissor'], 'naturalidade': ['doc-naturalidade'], 'estado-civil': ['doc-estado-civil'], 'profissao': ['doc-profissao'], 'orgao-vinculado': ['doc-orgao-vinculado'], 'nome-pai': ['doc-nome-pai'], 'nome-mae': ['doc-nome-mae'], 'telefone': ['doc-telefone'], 'email': ['doc-email'], 'logradouro': ['doc-logradouro'], 'bairro': ['doc-bairro'], 'cidade': ['doc-cidade'], 'estado': ['doc-estado'], 'cep': ['doc-cep'],
+                /* Campos de contrato estáticos removidos daqui */
+                'banco-novo': ['doc-banco-novo'], 'parcela-nova': ['doc-parcela-nova'], 'valor-devedor-tabela': ['doc-valor-devedor-tabela'], 'valor-liquido-cliente-tabela': ['doc-valor-liquido-cliente-tabela'], 'prazo-novo': ['doc-prazo-novo'], 'valor-total-aproximado': ['doc-valor-total-aproximado'], 'valor-liquido-cliente-texto': ['doc-valor-liquido-cliente-texto'], 'valor-repassar-empresa': ['doc-valor-repassar-empresa'], 'local-data': ['doc-local-data']
+            };
+
+            const camposMoeda = [ /* 'parcela-quitar-X' removidos */ 'parcela-nova', 'valor-devedor-tabela', 'valor-liquido-cliente-tabela', 'valor-total-aproximado', 'valor-liquido-cliente-texto', 'valor-repassar-empresa'];
+
             for (const formId in campos) {
                 const inputElement = document.getElementById(formId);
-                if (!inputElement) continue; 
-                
+                if (!inputElement) continue;
+
                 const valor = inputElement.value;
                 const docIds = campos[formId];
-                
+
                 docIds.forEach(docId => {
                     const el = document.getElementById(docId);
                     if (!el) return;
-                    
+
                     let valorFinal = valor;
+                    // Formata Moeda (apenas para os campos de moeda que *não* são de contrato)
                     if (camposMoeda.includes(formId) && valor.trim() !== "") {
                         const valorNumerico = moedaParaFloat(valor);
                         valorFinal = formatarMoeda(valorNumerico);
                     }
-                    
+
                     if (valor.trim() === "") {
                         const placeholderMap = {
                             'doc-nome-cliente': '[Nome Cliente]', 'doc-nome-cliente-ass-1': '[Nome Cliente]', 'doc-nome-cliente-ass-2': '[Nome Cliente]',
                             'doc-cpf-cliente': '[Cpf Cliente]', 'doc-rg-cliente': '[Rg Cliente]', 'doc-rg-emissor': '[Rg Emissor]',
-                            'doc-banco-quitar-1': '[Banco 1]', 'doc-parcela-quitar-1': '[Parcela 1]', 'doc-contrato-quitar-1': '[Contrato 1]', 'doc-pagas-quitar-1': '[Pagas 1]',
-                            'doc-banco-quitar-2': '[Banco 2]', 'doc-parcela-quitar-2': '[Parcela 2]', 'doc-contrato-quitar-2': '[Contrato 2]', 'doc-pagas-quitar-2': '[Pagas 2]',
-                            'doc-banco-quitar-3': '[Banco 3]', 'doc-parcela-quitar-3': '[Parcela 3]', 'doc-contrato-quitar-3': '[Contrato 3]', 'doc-pagas-quitar-3': '[Pagas 3]',
-                            'doc-banco-quitar-4': '[Banco 4]', 'doc-parcela-quitar-4': '[Parcela 4]', 'doc-contrato-quitar-4': '[Contrato 4]', 'doc-pagas-quitar-4': '[Pagas 4]',
                             'doc-local-data': '[Local Data]',
-                            // Adicione outros placeholders conforme necessário
                         };
-                        valorFinal = placeholderMap[docId] || `[${docId}]`; // Fallback genérico
+                        valorFinal = placeholderMap[docId] || `[${docId}]`;
                     }
                     el.textContent = valorFinal;
                 });
             }
+
+            // --- NOVO: Parte 2: Campos Dinâmicos (Tabela de Contratos) ---
+            const tbody = document.getElementById('doc-contratos-tbody');
+            const itemsContrato = document.querySelectorAll('.contrato-dinamico-item');
+            tbody.innerHTML = ''; // Limpa a tabela
+
+            if (itemsContrato.length === 0) {
+                // Adiciona linha de placeholder se estiver vazio
+                tbody.innerHTML = '<tr class="placeholder-row"><td colspan="4">Nenhum contrato adicionado</td></tr>';
+            } else {
+                itemsContrato.forEach(item => {
+                    const banco = item.querySelector('.campo-banco').value || '[Banco]';
+                    let parcela = item.querySelector('.campo-parcela').value;
+                    const contrato = item.querySelector('.campo-contrato').value || '[Contrato]';
+                    const pagas = item.querySelector('.campo-pagas').value || '[Pagas]';
+
+                    // Formata a parcela (já deve estar formatada pelo 'blur', mas garantimos)
+                    const parcelaFormatada = (parcela.trim() === "") ? '[Parcela]' : formatarMoeda(parcela);
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><span class="variavel">${banco}</span></td>
+                        <td><span class="variavel">${parcelaFormatada}</span></td>
+                        <td><span class="variavel">${contrato}</span></td>
+                        <td><span class="variavel">${pagas}</span></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
         }
 
-        // --- FUNÇÃO SETAR DATA (Existente) ---
-        function setarDataAtual() { const meses = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"]; const hoje = new Date(); const dia = hoje.getDate(); const mesNome = meses[hoje.getMonth()]; const ano = hoje.getFullYear(); const dataFormatada = `BRASÍLIA/DF, ${dia} de ${mesNome} de ${ano}`; const campoData = document.getElementById('local-data'); if (campoData.value === "") { campoData.value = dataFormatada; } }
 
-        
+        // --- FUNÇÃO SETAR DATA (Existente) ---
+        // ## MELHORIA: Função formatada para melhor leitura
+        function setarDataAtual() {
+            const meses = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+            const hoje = new Date();
+            const dia = hoje.getDate();
+            const mesNome = meses[hoje.getMonth()];
+            const ano = hoje.getFullYear();
+            const dataFormatada = `BRASÍLIA/DF, ${dia} de ${mesNome} de ${ano}`;
+            const campoData = document.getElementById('local-data');
+            if (campoData.value === "") {
+                campoData.value = dataFormatada;
+            }
+        }
+
+
         // --- FUNÇÃO GERAR PDF (Existente - v10) ---
         async function gerarPdf() {
             const botao = document.getElementById('gerar-pdf');
@@ -336,9 +1180,12 @@
             const nomeInput = document.getElementById('nome-cliente');
             const nomePessoa = nomeInput.value || 'documento';
             const filename = `${nomePessoa.trim().replace(/\s+/g, '_')}_termo_responsabilidade.pdf`;
-            
+
             const documentoCompleto = document.getElementById('documento-completo');
-            
+
+            // --- NOVO: Garante que o preview está 100% atualizado antes de gerar ---
+            atualizarPreview();
+
             documentoCompleto.classList.add('generating-pdf');
             document.body.classList.add('jsPDF-native-generating');
 
@@ -349,19 +1196,19 @@
                 const usableWidth = pdfWidth - (marginMM * 2); // 210mm - (25 * 2) = 160mm
 
                 await pdf.html(documentoCompleto, {
-                    callback: function(doc) {
+                    callback: function (doc) {
                         doc.save(filename);
                         showToast("PDF gerado com sucesso!");
                     },
-                    margin: [marginMM, marginMM, marginMM, marginMM], 
-                    autoPaging: 'text', 
-                    width: usableWidth, 
-                    windowWidth: documentoCompleto.scrollWidth 
+                    margin: [marginMM, marginMM, marginMM, marginMM],
+                    autoPaging: 'text',
+                    width: usableWidth,
+                    windowWidth: documentoCompleto.scrollWidth
                 });
 
             } catch (error) {
                 console.error("Erro ao gerar PDF:", error);
-                showToast("Ocorreu um erro ao gerar o PDF.", "danger"); 
+                showToast("Ocorreu um erro ao gerar o PDF.", "danger");
             } finally {
                 documentoCompleto.classList.remove('generating-pdf');
                 document.body.classList.remove('jsPDF-native-generating');
@@ -374,6 +1221,58 @@
         // ##################################################################
         // ### INÍCIO - NOVAS FUNÇÕES (Lógica da Calculadora Adaptada) ###
         // ##################################################################
+
+        // --- NOVO: LÓGICA PARA CONTRATOS DINÂMICOS ---
+
+        // Função para adicionar uma nova linha de contrato no formulário
+        function adicionarLinhaContrato(banco = '', parcela = '', contrato = '', pagas = '') {
+            const container = document.getElementById('contratos-dinamicos-container');
+            const novoContratoDiv = document.createElement('div');
+            novoContratoDiv.className = 'grid-4-dinamico contrato-dinamico-item'; // Nova classe de grid
+
+            // Formata a parcela para exibição no input
+            const parcelaFormatada = (parcela === '' || parcela === 0) ? '' : formatarMoeda(parcela);
+
+            // ## MELHORIA: Adicionado 'aria-label' ao botão remover para acessibilidade
+            novoContratoDiv.innerHTML = `
+                <div class="form-group">
+                    <label>Banco:</label>
+                    <input type="text" class="campo-banco" placeholder="BCO" value="${banco}">
+                </div>
+                <div class="form-group">
+                    <label>Parcela:</label>
+                    <input type="text" class="campo-parcela campo-moeda" placeholder="R$ 0,00" value="${parcelaFormatada}">
+                </div>
+                <div class="form-group">
+                    <label>Contrato:</label>
+                    <input type="text" class="campo-contrato" placeholder="Nº Contrato" value="${contrato}">
+                </div>
+                <div class="form-group">
+                    <label>Pagas/Total:</label>
+                    <input type="text" class="campo-pagas" placeholder="0/0" value="${pagas}">
+                </div>
+                <button type="button" class="btn-remover-contrato" title="Remover este contrato" aria-label="Remover este contrato">&times;</button>
+            `;
+
+            container.appendChild(novoContratoDiv);
+
+            // Adiciona listeners aos novos inputs para reatividade
+            novoContratoDiv.querySelectorAll('input').forEach(input => {
+                input.addEventListener('input', atualizarPreview);
+            });
+
+            // Re-aplica a máscara de moeda no novo campo
+            const novoCampoMoeda = novoContratoDiv.querySelector('.campo-moeda');
+            novoCampoMoeda.addEventListener('blur', function () {
+                if (this.value.trim() !== "") {
+                    const valorNumerico = moedaParaFloat(this.value);
+                    this.value = formatarMoeda(valorNumerico);
+                    atualizarPreview(); // Atualiza o preview após formatar
+                }
+            });
+        }
+        // --- FIM DA LÓGICA DINÂMICA ---
+
 
         function showLoading(message) {
             document.getElementById('loading-text').textContent = message || 'Analisando PDF...';
@@ -406,22 +1305,22 @@
                 </div>`;
 
             if (loans.length === 0) {
-                 listaDiv.innerHTML += '<p class="text-center p-3">Nenhum contrato de EMPRÉSTIMO encontrado.</p>';
+                listaDiv.innerHTML += '<p style="text-align: center; padding: 10px;">Nenhum contrato de EMPRÉSTIMO (filtrado) encontrado.</p>';
             }
 
             // Adiciona contratos
             loans.forEach((loan, index) => {
                 const itemDiv = document.createElement('div');
                 itemDiv.className = 'form-check';
-                
+
                 // --- MELHORIA VISUAL: Mostrar contrato no modal ---
                 itemDiv.innerHTML = `
                     <input class="form-check-input loan-checkbox" type="checkbox" 
-                           id="loan-${index}"
-                           data-banco="${loan.banco}"
-                           data-parcela="${loan.parcelaNum}"
-                           data-status="${loan.status}"
-                           data-contrato="${loan.contrato || ''}">
+                            id="loan-${index}"
+                            data-banco="${loan.banco}"
+                            data-parcela="${loan.parcelaNum}"
+                            data-status="${loan.status}"
+                            data-contrato="${loan.contrato || ''}">
                     <label class="form-check-label" for="loan-${index}">
                         <strong>${loan.banco}</strong>
                         <br><small>Contrato: ${loan.contrato || 'N/A'} | Parcela: ${formatarMoeda(loan.parcelaNum)} | Status: ${loan.status}</small>
@@ -442,11 +1341,12 @@
             document.getElementById('contract-modal-overlay').style.display = 'none';
         }
 
+        // --- NOVO: Função 'applySelectedContracts' (Refatorada para campos dinâmicos) ---
         function applySelectedContracts() {
             const checkedBoxes = document.querySelectorAll('.loan-checkbox:checked');
             let contractsApplied = 0;
 
-            // 1. Limpa os 4 campos de contrato antes de preencher
+            // 1. Limpa os campos de contrato dinâmicos antes de preencher
             limparCamposContrato();
 
             // 2. Preenche os dados do cliente (se existirem)
@@ -460,21 +1360,17 @@
                 document.getElementById('cpf-cliente').value = cpfClienteModal;
             }
 
-            // 3. Preenche os campos de contrato (limitado a 4)
+            // 3. Preenche os campos de contrato (SEM LIMITE de 4)
             checkedBoxes.forEach((cb, index) => {
-                if (index >= 4) {
-                    if (contractsApplied === 4) { // Mostra aviso apenas uma vez
-                         showToast("Aviso: Apenas os 4 primeiros contratos foram importados.", "warning");
-                         contractsApplied++; // Incrementa para não mostrar de novo
-                    }
-                    return; 
-                }
-                
-                const i = index + 1; // IDs do formulário são 1-indexados
-                document.getElementById(`banco-quitar-${i}`).value = cb.dataset.banco;
-                document.getElementById(`parcela-quitar-${i}`).value = formatarMoeda(parseFloat(cb.dataset.parcela)); // Formata para R$
-                document.getElementById(`contrato-quitar-${i}`).value = cb.dataset.contrato; // Pode estar vazio
-                document.getElementById(`pagas-quitar-${i}`).value = cb.dataset.status;
+                // Removemos o limite 'if (index >= 4)'
+
+                // Chama a nova função para adicionar a linha no formulário
+                adicionarLinhaContrato(
+                    cb.dataset.banco,
+                    parseFloat(cb.dataset.parcela), // Passa o número
+                    cb.dataset.contrato,
+                    cb.dataset.status
+                );
 
                 contractsApplied++;
             });
@@ -494,159 +1390,190 @@
             hideContractModal();
         }
 
+        // --- NOVO: Função 'limparCamposContrato' (Refatorada) ---
         function limparCamposContrato() {
-             for (let i = 1; i <= 4; i++) {
-                document.getElementById(`banco-quitar-${i}`).value = '';
-                document.getElementById(`parcela-quitar-${i}`).value = '';
-                document.getElementById(`contrato-quitar-${i}`).value = '';
-                document.getElementById(`pagas-quitar-${i}`).value = '';
-            }
+            // Limpa o container dinâmico
+            document.getElementById('contratos-dinamicos-container').innerHTML = '';
+            // (Não precisa mais chamar o atualizarPreview daqui, pois o botão de limpar
+            // e o 'applySelectedContracts' já chamam o 'atualizarPreview' depois)
         }
 
 
         // --- Lógica de Processamento de PDF (da Calculadora) ---
 
         // =================================================================
-        // === FUNÇÃO EXÉRCITO ATUALIZADA (LÓGICA HÍBRIDA) ===
+        // === FUNÇÃO EXÉRCITO ATUALIZADA (LÓGICA HÍBRIDA + FILTRO) ===
+        // =================================================================
+        // =================================================================
+        // === FUNÇÃO EXÉRCITO (Lógica Antiga Adaptada) ===
         // =================================================================
         async function processarPdfExercicio(text) {
-            let cliente = { nome: '', cpf: '' };
-            let loansFound = [];
 
-            // --- TENTATIVA 1: Layout Novo (eConsig "BERENILDE") ---
-            console.log("Tentando Regex do Exército (Layout eConsig)...");
-            
-            // 1. Extrair dados do cliente (Layout "BERENILDE")
-            const infoRegexNovo = /\d+\s*-\s*([\d.-]+)\s*-\s*([\s\S]+?)\n\s*DATA DA CARGA/;
-            const infoMatchNovo = text.match(infoRegexNovo);
+            // --- Arrays para armazenar os dados ---
+            let loansArray = [];
+            let clienteObject = { nome: 'Não lido', cpf: 'Não lido' };
 
-            if (infoMatchNovo) {
-                cliente.cpf = infoMatchNovo[1].trim();
-                cliente.nome = infoMatchNovo[2].replace(/\n/g, ' ').trim();
+            // --- Variáveis locais para dados do cliente ---
+            let clienteCpfPDF = '';
+            let clienteNomePDF = '';
+
+            // Limpa o texto, removendo cabeçalhos de página e rodapés
+            let cleanText = text.replace(/--- FIM DA PÁGINA \d+ ---/g, '')
+                .replace(/Consignatária\n\s*▴\s*▾[\s\S]+?Situação\n\s*▴\s*▾/g, '') // Remove header de tabela limpa
+                .replace(/Consignatária Nº Serviço Inclusão Vir.prest. Virfolha Nº Pagas Situação/g, ''); // Remove header de tabela OCR
+
+            // --- DETECÇÃO AUTOMÁTICA DO TIPO DE TEXTO ---
+            const isOcrText = cleanText.includes('O74-SABEMI-') || cleanText.includes('R$834/12') || cleanText.includes('R$74046');
+
+            if (isOcrText) {
+                // --- LÓGICA B: PARSER TOLERANTE PARA OCR (Tesseract) ---
+                console.log("Detectado texto de OCR (Exército). Usando parser tolerante.");
+
+                const cpfMatch = text.match(/(\d{3}\.\d{3}\.\d{3}-\d{2})/);
+                const nomeMatch = text.match(/(\d{9,12})\s*-\s*([\d.-]+)\s*-\s*([A-ZÀ-Ú ]+)(?:\n([A-ZÀ-Ú ]+))?/);
+
+                if (cpfMatch) {
+                    clienteCpfPDF = cpfMatch[0];
+                } else if (nomeMatch) {
+                    clienteCpfPDF = nomeMatch[2].trim();
+                }
+                if (nomeMatch) {
+                    clienteNomePDF = nomeMatch[3].trim() + (nomeMatch[4] ? ' ' + nomeMatch[4].trim() : '');
+                }
+
+                // (DOM-Manipulation-Removed)
+
+                const blocos = cleanText.split(/Andamento/gi);
+                blocos.forEach((bloco, index) => {
+                    if (!bloco.toUpperCase().includes('EMPRÉSTIMO') && !bloco.toUpperCase().includes('DEDUT')) return;
+
+                    let nomeBanco = 'Banco (Não lido)';
+                    if (bloco.includes('SABEMI')) nomeBanco = 'SABEMI - PRIVADA';
+
+                    const valorMatches = bloco.match(/R\$\s*([\d.,\/]+)/g);
+                    if (!valorMatches) return;
+
+                    let valorStr = valorMatches[valorMatches.length - 1];
+                    valorStr = valorStr.replace('/', ',').replace(/[\[|]/g, '');
+
+                    if (!valorStr.includes(',')) {
+                        let digits = valorStr.replace(/R\$\s*/, '').trim();
+                        if (digits.length > 2) {
+                            valorStr = "R$ " + digits.slice(0, -2) + ',' + digits.slice(-2);
+                        }
+                    }
+                    const valorParcelaNum = moedaParaFloat(valorStr);
+                    if (valorParcelaNum === 0) return;
+
+                    const parcelasMatch = bloco.match(/\s*([\w\.|]+)\s+([\w\d]+)\s+Em/s);
+                    if (!parcelasMatch) {
+                        console.warn('Contrato pulado (OCR não leu as parcelas):', bloco);
+                        return;
+                    }
+                    let total = parcelasMatch[1].replace(/[\[|TP]/g, '').trim();
+                    let pagas = parcelasMatch[2].replace(/[x|xi|nm]/g, '0');
+
+                    if (isNaN(parseInt(pagas, 10)) || (total.toUpperCase() !== 'INDET.' && isNaN(parseInt(total, 10)))) {
+                        console.warn('Contrato pulado (OCR leu lixo nas parcelas):', bloco);
+                        return;
+                    }
+
+                    // Adiciona o contrato ao array
+                    loansArray.push({
+                        banco: nomeBanco,
+                        parcelaNum: valorParcelaNum,
+                        status: `${pagas} de ${total}`,
+                        contrato: '' // OCR não pega contrato
+                    });
+                });
+            } else {
+                // --- LÓGICA A: PARSER ORIGINAL (Para PDF limpo) ---
+                console.log("Detectado texto limpo (Exército). Usando parser padrão.");
+
+                const infoRegex = /(\d{9,12})\s*-\s*([\d.-]+)\s*-\s*([A-ZÀ-Ú ]+)(?:\n([A-ZÀ-Ú ]+))?/;
+                const infoMatch = text.match(infoRegex);
+
+                if (infoMatch) {
+                    clienteCpfPDF = infoMatch[2].trim();
+                    clienteNomePDF = infoMatch[3].trim();
+                    if (infoMatch[4]) {
+                        clienteNomePDF += ` ${infoMatch[4].trim()}`;
+                    }
+                } else {
+                    console.warn("Regex de Nome/CPF falhou no parser limpo (Exército).");
+                }
+
+                // (DOM-Manipulation-Removed)
+
+                const blocos = cleanText.split(/\n(?=\d{3}\s*-\s*)/);
+                blocos.forEach((bloco, index) => {
+                    if (bloco.toUpperCase().includes('EMPRÉSTIMO') && /Em\s+Andamento/.test(bloco)) {
+                        const bancoMatch = bloco.match(/^([\s\S]+?)\n(\d{7})\n/);
+                        const valorMatch = bloco.match(/R\$\s*[\d.,]+/);
+                        const parcelasMatch = /([\w\.]+)\s*\n\s*(\d+)\s+Em\s+Andamento/;
+                        const parcelasResult = bloco.match(parcelasMatch);
+
+                        if (bancoMatch && valorMatch && parcelasResult) {
+                            const nomeBanco = bancoMatch[1].replace(/\n/g, ' ').trim();
+                            const numContrato = bancoMatch[2].trim(); // Pega o contrato aqui
+                            const valor = valorMatch[0];
+                            const total = parcelasResult[1];
+                            const pagas = parcelasResult[2];
+
+                            if (total.toUpperCase() === 'INDET.') return;
+
+                            const valorParcelaNum = moedaParaFloat(valor);
+
+                            // Adiciona o contrato ao array
+                            loansArray.push({
+                                banco: nomeBanco,
+                                parcelaNum: valorParcelaNum,
+                                status: `${pagas} de ${total}`,
+                                contrato: numContrato
+                            });
+                        }
+                    }
+                });
             }
 
-            // 2. Extrair Contratos (Layout "BERENILDE")
-            const rgxEmprestimosNovo = /([\d\s\w-]+-[\s\S]+?)\n(\d{7})\n[\s\S]+?EMPRÉSTIMO[\s\S]+?(R\$\s*[\d.,]+)\n\s*R\$\s*[\d.,]+\n\s*(\d+|Indet\.)\n\s*(\d+)\n\s*Em\nAndamento/g;
-            let matches = [...text.matchAll(rgxEmprestimosNovo)];
+            if (loansArray.length === 0) {
+                // Em vez de showToast, apenas avisamos no console. 
+                // O modal vai mostrar que a lista está vazia.
+                console.warn("Nenhum contrato 'Em Andamento' foi encontrado no formato esperado.");
+            }
 
-            matches.forEach((match) => {
-                const [_, nomeBanco, numContrato, valor, total, pagas] = match;
-                if (total.toUpperCase() === 'INDET.') return; 
-                const valorParcelaNum = moedaParaFloat(valor);
-                const cleanNomeBanco = nomeBanco.replace(/\n/g, ' ').trim();
-                loansFound.push({
-                    banco: cleanNomeBanco,
-                    parcelaNum: valorParcelaNum,
-                    status: `${pagas.trim()} de ${total.trim()}`,
-                    contrato: numContrato.trim()
-                });
-            });
+            // Agrupa os dados do cliente para o retorno
+            clienteObject.nome = clienteNomePDF || 'Não lido';
+            clienteObject.cpf = clienteCpfPDF || 'Não lido';
 
-
-            // --- TENTATIVA 2: Fallback para Layouts Antigos (da Calculadora) ---
-            if (loansFound.length === 0) {
-                console.warn("Regex eConsig falhou. Tentando layouts antigos (OCR/Limpo)...");
-                
-                let cleanText = text.replace(/--- FIM DA PÁGINA \d+ ---/g, '')
-                                    .replace(/Consignatária\n\s*▴\s*▾[\s\S]+?Situação\n\s*▴\s*▾/g, '') 
-                                    .replace(/Consignatária Nº Serviço Inclusão Vir.prest. Virfolha Nº Pagas Situação/g, ''); 
-
-                const isOcrText = cleanText.includes('O74-SABEMI-') || cleanText.includes('R$834/12') || cleanText.includes('R$74046');
-
-                // Tenta pegar cliente (se o Regex novo falhou)
-                if (!cliente.cpf) {
-                    const nomeMatch = text.match(/(\d{9,12})\s*-\s*([\d.-]+)\s*-\s*([A-ZÀ-Ú ]+)(?:\n([A-ZÀ-Ú ]+))?/);
-                    if (nomeMatch) {
-                        cliente.cpf = nomeMatch[2].trim();
-                        cliente.nome = nomeMatch[3].trim() + (nomeMatch[4] ? ' ' + nomeMatch[4].trim() : '');
-                    }
-                }
-
-                if (isOcrText) {
-                    // Lógica OCR (da Calculadora)
-                    console.log("Detectado texto de OCR (Exército). Usando parser tolerante.");
-                    const blocos = cleanText.split(/Andamento/gi);
-                    blocos.forEach((bloco) => {
-                        if (!bloco.toUpperCase().includes('EMPRÉSTIMO') && !bloco.toUpperCase().includes('DEDUT')) return;
-                        let nomeBanco = 'Banco (Não lido)';
-                        if (bloco.includes('SABEMI')) nomeBanco = 'SABEMI - PRIVADA';
-                        const valorMatches = bloco.match(/R\$\s*([\d.,\/]+)/g);
-                        if (!valorMatches) return;
-                        let valorStr = valorMatches[valorMatches.length - 1].replace('/', ',').replace(/[\[|]/g, '');
-                        if (!valorStr.includes(',')) {
-                            let digits = valorStr.replace(/R\$\s*/, '').trim();
-                            if (digits.length > 2) valorStr = "R$ " + digits.slice(0, -2) + ',' + digits.slice(-2);
-                        }
-                        const valorParcelaNum = moedaParaFloat(valorStr);
-                        if (valorParcelaNum === 0) return;
-                        const parcelasMatch = bloco.match(/\s*([\w\.|]+)\s+([\w\d]+)\s+Em/s);
-                        if (!parcelasMatch) return;
-                        let total = parcelasMatch[1].replace(/[\[|TP]/g, '').trim();
-                        let pagas = parcelasMatch[2].replace(/[x|xi|nm]/g, '0');
-                        if (isNaN(parseInt(pagas, 10)) || (total.toUpperCase() !== 'INDET.' && isNaN(parseInt(total, 10)))) return;
-                        if (total.toUpperCase() === 'INDET.') return;
-                        loansFound.push({ banco: nomeBanco, parcelaNum: valorParcelaNum, status: `${pagas} de ${total}`, contrato: '' });
-                    });
-                } else {
-                    // Lógica Texto Limpo Antigo (da Calculadora)
-                    console.log("Detectado texto limpo (Exército). Usando parser padrão.");
-                    const blocos = cleanText.split(/\n(?=\d{3}\s*-\s*)/);
-                    blocos.forEach((bloco) => {
-                        if (bloco.toUpperCase().includes('EMPRÉSTIMO') && /Em\s+Andamento/.test(bloco)) {
-                            const bancoMatch = bloco.match(/^([\s\S]+?)\n(\d{7})\n/);
-                            const valorMatch = bloco.match(/R\$\s*[\d.,]+/);
-                            const parcelasMatch = /([\w\.]+)\s*\n\s*(\d+)\s+Em\s+Andamento/;
-                            const parcelasResult = bloco.match(parcelasMatch);
-                            if (bancoMatch && valorMatch && parcelasResult) {
-                                const nomeBanco = bancoMatch[1].replace(/\n/g, ' ').trim();
-                                const numContrato = bancoMatch[2].trim();
-                                const valor = valorMatch[0];
-                                const total = parcelasResult[1];
-                                const pagas = parcelasResult[2];
-                                if (total.toUpperCase() === 'INDET.') return;
-                                const valorParcelaNum = moedaParaFloat(valor);
-                                loansFound.push({ banco: nomeBanco, parcelaNum: valorParcelaNum, status: `${pagas} de ${total}`, contrato: numContrato });
-                            }
-                        }
-                    });
-                }
-            } // Fim do Fallback
-            
-            return { loans: loansFound, cliente: cliente };
+            // Retorna o objeto final que o 'showContractModal' espera
+            return { loans: loansArray, cliente: clienteObject };
         }
-        
-        // =================================================================
-        // === FUNÇÃO SIAPE ATUALIZADA (LÓGICA HÍBRIDA) ===
-        // =================================================================
+
         // =================================================================
         // === FUNÇÃO SIAPE ATUALIZADA (CORREÇÃO CPF/NOME) ===
         // =================================================================
         async function processarPdfSiape(text) {
             let cliente = { nome: 'Não lido', cpf: 'Não lido' };
             let loansFound = [];
-            
+
             // --- TENTATIVA 1: Layout Novo (Layout "VALERIA" / "JANDA") ---
             console.log("Tentando Regex do SIAPE (Layout Novo)...");
 
             // 1. Extrair dados do cliente (Layout Novo)
-            // === CORREÇÃO AQUI ===
-            // O Regex antigo estava capturando as linhas erradas (Órgão e Matrícula).
-            // Este novo Regex pula as linhas corretas para capturar CPF e Nome.
             const infoRegexNovo = /CPF\nMatrícula\nNome\n(?:[^\n]+\n)([^\n]+)\n(?:[^\n]+\n)([^\n]+)/;
-            
+
             let infoMatchNovo = text.match(infoRegexNovo);
-            
+
             if (infoMatchNovo && infoMatchNovo[1] && infoMatchNovo[2]) {
-                 // infoMatchNovo[1] agora é o CPF
-                 // infoMatchNovo[2] agora é o Nome
-                 const cpfPotencial = infoMatchNovo[1].trim();
-                 if (/\d{3}\.\d{3}\.\d{3}-\d{2}/.test(cpfPotencial) || /\d{11}/.test(cpfPotencial.replace(/[.-]/g,''))) {
-                      cliente.cpf = cpfPotencial;
-                      cliente.nome = infoMatchNovo[2].trim();
-                      console.log("Cliente SIAPE (Novo) encontrado:", cliente.nome);
-                 } else {
-                     console.warn("Regex SIAPE (Novo) encontrou dados, mas CPF parece inválido.");
-                 }
+                const cpfPotencial = infoMatchNovo[1].trim();
+                if (/\d{3}\.\d{3}\.\d{3}-\d{2}/.test(cpfPotencial) || /\d{11}/.test(cpfPotencial.replace(/[.-]/g, ''))) {
+                    cliente.cpf = cpfPotencial;
+                    cliente.nome = infoMatchNovo[2].trim();
+                    console.log("Cliente SIAPE (Novo) encontrado:", cliente.nome);
+                } else {
+                    console.warn("Regex SIAPE (Novo) encontrou dados, mas CPF parece inválido.");
+                }
             } else {
                 console.warn("Regex SIAPE (Novo) falhou.");
             }
@@ -657,14 +1584,14 @@
 
             matches.forEach((match) => {
                 const [_, numContrato, nomeBanco, valor, parcelasStr] = match;
-                let cleanNomeBanco = nomeBanco.replace(/^\d+\s*-\s*/, '').replace('EMPREST BCO PRIVADOS - ','').replace('EMPREST BCO OFICIAL - ','').trim();
+                let cleanNomeBanco = nomeBanco.replace(/^\d+\s*-\s*/, '').replace('EMPREST BCO PRIVADOS - ', '').replace('EMPREST BCO OFICIAL - ', '').trim();
                 const [pagas, total] = parcelasStr.split('/');
                 const valorParcelaNum = moedaParaFloat(valor);
                 if (parseInt(total, 10) > 900) return;
-                loansFound.push({ 
-                    banco: cleanNomeBanco, 
-                    parcelaNum: valorParcelaNum, 
-                    status: `${pagas} de ${total}`, 
+                loansFound.push({
+                    banco: cleanNomeBanco,
+                    parcelaNum: valorParcelaNum,
+                    status: `${pagas} de ${total}`,
                     contrato: numContrato.trim()
                 });
             });
@@ -687,31 +1614,31 @@
                 // 2. Extrair Contratos (Layout Antigo)
                 const rgxAntigo = /(EMPREST[^\n]+)\n(?:.|\n)*?(R\$\s*[\d\.,]+)\n(\d{2,3}\/\d{2,3})/g;
                 let matchesAntigo = [...text.matchAll(rgxAntigo)];
-                
+
                 matchesAntigo.forEach((match) => {
                     const [_, nomeBanco, valor, parcelasStr] = match;
-                    let cleanNomeBanco = nomeBanco.replace(/^\d+\s*-\s*/, '').replace('EMPREST BCO PRIVADOS - ','').replace('EMPREST BCO OFICIAL - ','').trim();
+                    let cleanNomeBanco = nomeBanco.replace(/^\d+\s*-\s*/, '').replace('EMPREST BCO PRIVADOS - ', '').replace('EMPREST BCO OFICIAL - ', '').trim();
                     const [pagas, total] = parcelasStr.split('/');
                     const valorParcelaNum = moedaParaFloat(valor);
                     if (parseInt(total, 10) > 900) return;
-                    loansFound.push({ 
-                        banco: cleanNomeBanco, 
-                        parcelaNum: valorParcelaNum, 
-                        status: `${pagas} de ${total}`, 
+                    loansFound.push({
+                        banco: cleanNomeBanco,
+                        parcelaNum: valorParcelaNum,
+                        status: `${pagas} de ${total}`,
                         contrato: '' // Contrato fica em branco
                     });
                 });
             } // Fim do Fallback
-            
+
             // Se nenhum Regex de cliente funcionou, tenta o fallback do antigo
             if (cliente.cpf === 'Não lido') {
-                 const headerRegexAntigo = /Órgão\nCPF\nMatrícula\nNome\n[^\n]+\n([^\n]+)\n[^\n]+\n([^\n]+)/;
-                 let headerMatchAntigo = text.match(headerRegexAntigo);
-                 if (headerMatchAntigo) {
-                     cliente.cpf = headerMatchAntigo[1].trim();
-                     cliente.nome = headerMatchAntigo[2].trim();
-                     console.log("Cliente SIAPE (Antigo-Fallback) encontrado:", cliente.nome);
-                 }
+                const headerRegexAntigo = /Órgão\nCPF\nMatrícula\nNome\n[^\n]+\n([^\n]+)\n[^\n]+\n([^\n]+)/;
+                let headerMatchAntigo = text.match(headerRegexAntigo);
+                if (headerMatchAntigo) {
+                    cliente.cpf = headerMatchAntigo[1].trim();
+                    cliente.nome = headerMatchAntigo[2].trim();
+                    console.log("Cliente SIAPE (Antigo-Fallback) encontrado:", cliente.nome);
+                }
             }
 
             return { loans: loansFound, cliente: cliente };
@@ -723,8 +1650,8 @@
         async function parsearPdf(event) {
             const file = event.target.files[0];
             if (!file) return;
-            
-            event.target.value = null; 
+
+            event.target.value = null;
             showLoading('Analisando...');
             const loadingText = document.getElementById("loading-text");
 
@@ -757,7 +1684,7 @@
                         console.warn("PDF parece ser uma imagem. Iniciando OCR...");
                         extractedText = '';
                         if (typeof Tesseract === 'undefined') throw new Error("Tesseract.js não foi carregado.");
-                        
+
                         const worker = await Tesseract.createWorker('por');
                         for (let i = 1; i <= pdf.numPages; i++) {
                             loadingText.textContent = `Lendo imagem: Página ${i} de ${pdf.numPages}...`;
@@ -790,7 +1717,7 @@
                     } else {
                         result = await processarPdfSiape(extractedText);
                     }
-                    
+
                     showToast("Extrato lido e convênio detectado!", "success");
                     showContractModal(result.loans, result.cliente); // Mostra o modal com os resultados
 
@@ -813,30 +1740,30 @@
         document.addEventListener('DOMContentLoaded', () => {
             // Funções de inicialização existentes
             setarDataAtual();
-            atualizarPreview();
-            
+            atualizarPreview(); // Chama para renderizar o placeholder da tabela
+
             // Listeners do formulário existentes
             document.querySelectorAll('#form-container input').forEach(input => { input.addEventListener('input', atualizarPreview); });
-            document.querySelectorAll('.campo-moeda').forEach(input => { input.addEventListener('blur', function() { if (this.value.trim() !== "") { const valorNumerico = moedaParaFloat(this.value); this.value = formatarMoeda(valorNumerico); atualizarPreview(); } }); });
+            document.querySelectorAll('.campo-moeda').forEach(input => { input.addEventListener('blur', function () { if (this.value.trim() !== "") { const valorNumerico = moedaParaFloat(this.value); this.value = formatarMoeda(valorNumerico); atualizarPreview(); } }); });
             document.getElementById('gerar-pdf').addEventListener('click', gerarPdf);
 
-            
+
             // === NOVOS Event Listeners (para Leitor de PDF) ===
             const uploadArea = document.getElementById('upload-label');
-            
+
             // Eventos de Drag & Drop
             uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.classList.add('hover'); });
             uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('hover'));
             uploadArea.addEventListener('drop', (e) => {
-                 e.preventDefault();
-                 uploadArea.classList.remove('hover');
-                 if (e.dataTransfer.files.length > 0 && e.dataTransfer.files[0].type === "application/pdf") {
-                     document.getElementById('pdf-upload').files = e.dataTransfer.files;
-                     document.getElementById('pdf-upload').dispatchEvent(new Event('change'));
-                 } else if (e.dataTransfer.files.length > 0) {
-                      showToast("Por favor, arraste apenas arquivos PDF.", "warning");
-                 }
-             });
+                e.preventDefault();
+                uploadArea.classList.remove('hover');
+                if (e.dataTransfer.files.length > 0 && e.dataTransfer.files[0].type === "application/pdf") {
+                    document.getElementById('pdf-upload').files = e.dataTransfer.files;
+                    document.getElementById('pdf-upload').dispatchEvent(new Event('change'));
+                } else if (e.dataTransfer.files.length > 0) {
+                    showToast("Por favor, arraste apenas arquivos PDF.", "warning");
+                }
+            });
 
             // Evento de clique (para abrir seletor)
             document.getElementById("pdf-upload").addEventListener("change", parsearPdf);
@@ -844,15 +1771,38 @@
             // Botão Limpar Contratos
             document.getElementById('limpar-contratos-btn').addEventListener('click', () => {
                 limparCamposContrato();
-                atualizarPreview(); // Atualiza o preview para mostrar os campos limpos
+                atualizarPreview(); // Atualiza o preview para mostrar a tabela limpa
                 showToast("Campos de contrato limpos.", "success");
             });
 
             // Botões do Modal
             document.getElementById('modal-cancel-btn').addEventListener('click', hideContractModal);
             document.getElementById('modal-apply-btn').addEventListener('click', applySelectedContracts);
+
+            // --- NOVO: Listeners para Contratos Dinâmicos ---
+            document.getElementById('btn-add-contrato').addEventListener('click', () => {
+                adicionarLinhaContrato();
+                atualizarPreview(); // Atualiza o preview
+            });
+
+            // Event Listener para REMOVER (usando delegação de evento)
+            document.getElementById('contratos-dinamicos-container').addEventListener('click', function (e) {
+                if (e.target && e.target.classList.contains('btn-remover-contrato')) {
+                    e.target.closest('.contrato-dinamico-item').remove();
+                    atualizarPreview(); // Atualiza o preview
+                }
+            });
+
+            // --- NOVO: Listener para Botão de Logout ---
+            document.getElementById('btn-logout').addEventListener('click', () => {
+                if (confirm("Você tem certeza que deseja sair?")) {
+                    localStorage.removeItem('isAuthenticated');
+                    window.location.replace('index.html');
+                }
+            });
         });
     </script>
 
 </body>
+
 </html>
