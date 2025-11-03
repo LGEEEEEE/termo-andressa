@@ -303,10 +303,12 @@
             vertical-align: top;
         }
 
+        /* ### REGRA REMOVIDA ###
         .preview-table-dados td:first-child {
             font-weight: bold;
             width: 150px;
         }
+        */
 
         .preview-table-contratos th {
             border: 1px solid #000;
@@ -314,6 +316,12 @@
             font-weight: bold;
             text-align: center;
             background-color: #f2f2f2;
+            
+            /* --- ADICIONADO PARA CORRIGIR QUEBRA --- */
+            white-space: normal;
+            overflow-wrap: break-word;
+            word-break: break-word;
+            /* -------------------------------------- */
         }
 
         /* * ####################################
@@ -339,13 +347,19 @@
             font-style: italic;
         }
 
+        /* ### CORREÇÃO DO BLOCO DE ASSINATURA ### */
         .assinatura-bloco {
             margin-top: 40px;
             text-indent: 0;
-            display: flex;
-            justify-content: space-between;
+            /* display: flex; <-- REMOVIDO */
+            /* justify-content: space-between; <-- REMOVIDO */
             font-weight: bold;
             page-break-inside: avoid !important;
+
+            /* ADICIONADO: Layout de tabela */
+            display: table;
+            width: 100%;
+            table-layout: fixed;
         }
 
         #primeira-assinatura {
@@ -354,11 +368,57 @@
 
         .assinatura-bloco span {
             text-align: center;
+
+            /* ADICIONADO: Comportamento de célula */
+            display: table-cell;
+            width: 50%; /* Garante a divisão correta */
+            vertical-align: top;
         }
 
         .assinatura-bloco .contratado {
             text-align: right;
         }
+        
+        /* --- NOVO: Estilos para blocos de dados (Cliente/Empresa) --- */
+        .bloco-dados {
+            margin-bottom: 15px;
+            /* Mantém a separação que a tabela tinha */
+        }
+
+        .bloco-titulo {
+            text-align: center;
+            font-weight: bold;
+            background-color: #f2f2f2;
+            padding: 4px 6px;
+            border: 1px solid #000;
+            font-size: 10pt;
+            /* Mantém a fonte do doc */
+            margin: 0;
+            border-bottom: none;
+            /* O <p> de baixo cuida da borda */
+        }
+
+        .bloco-dados .dado-linha {
+            margin: 0;
+            padding: 4px 6px;
+            text-indent: 0;
+            /* Remove a indentação de parágrafo */
+            border-left: 1px solid #000;
+            /* Simula a borda da tabela */
+            border-right: 1px solid #000;
+            /* Simula a borda da tabela */
+            border-bottom: 1px solid #eee;
+            /* Linha interna suave */
+            line-height: 1.4;
+        }
+
+        .bloco-dados .dado-linha strong {
+            font-weight: bold;
+            /* Mantém o label em negrito */
+        }
+
+        /* --- FIM DOS NOVOS ESTILOS --- */
+
 
         /* Toast (Notificações) */
         .toast-container {
@@ -785,98 +845,77 @@
 
     <div id="preview-container">
         <div id="documento-completo">
-            <table class="preview-table preview-table-dados">
-                <tr>
-                    <td colspan="2" style="text-align: center; font-weight: bold; background-color: #f2f2f2;">DADOS DO
-                        CLIENTE</td>
-                </tr>
-                <tr>
-                    <td>Nome do Cliente:</td>
-                    <td><span id="doc-nome-cliente" class="variavel">[Nome Cliente]</span></td>
-                </tr>
-                <tr>
-                    <td>CPF do Cliente:</td>
-                    <td><span id="doc-cpf-cliente" class="variavel">[Cpf Cliente]</span></td>
-                </tr>
-                <tr>
-                    <td>RG:</td>
-                    <td><span id="doc-rg-cliente" class="variavel">[Rg Cliente]</span> Orgão Expedidor: <span
-                            id="doc-rg-emissor" class="variavel">[Rg Emissor]</span></td>
-                </tr>
-                <tr>
-                    <td>Naturalidade:</td>
-                    <td><span id="doc-naturalidade" class="variavel">[Naturalidade]</span></td>
-                </tr>
-                <tr>
-                    <td>Estado Civil:</td>
-                    <td><span id="doc-estado-civil" class="variavel">[Estado Civil]</span></td>
-                </tr>
-                <tr>
-                    <td>Profissão:</td>
-                    <td><span id="doc-profissao" class="variavel">[Profissao]</span></td>
-                </tr>
-                <tr>
-                    <td>Vinculado ao Órgão:</td>
-                    <td><span id="doc-orgao-vinculado" class="variavel">[Orgao Vinculado]</span></td>
-                </tr>
-                <tr>
-                    <td>Nome do Pai:</td>
-                    <td><span id="doc-nome-pai" class="variavel">[Nome Pai]</span></td>
-                </tr>
-                <tr>
-                    <td>Nome da Mãe:</td>
-                    <td><span id="doc-nome-mae" class="variavel">[Nome Mae]</span></td>
-                </tr>
-                <tr>
-                    <td>Tel./Whatsapp:</td>
-                    <td><span id="doc-telefone" class="variavel">[Telefone]</span> E-mail: <span id="doc-email"
-                            class="variavel">[Email]</span></td>
-                </tr>
-                <tr>
-                    <td>Logradouro:</td>
-                    <td><span id="doc-logradouro" class="variavel">[Logradouro]</span></td>
-                </tr>
-                <tr>
-                    <td>Bairro:</td>
-                    <td><span id="doc-bairro" class="variavel">[Bairro]</span></td>
-                </tr>
-                <tr>
-                    <td>Cidade:</td>
-                    <td><span id="doc-cidade" class="variavel">[Cidade]</span></td>
-                </tr>
-                <tr>
-                    <td>Estado:</td>
-                    <td><span id="doc-estado" class="variavel">[Estado]</span> CEP: <span id="doc-cep"
-                            class="variavel">[Cep]</span></td>
-                </tr>
-            </table>
-            <table class="preview-table preview-table-dados">
-                <tr>
-                    <td colspan="2" style="text-align: center; font-weight: bold; background-color: #f2f2f2;">DADOS DA
-                        EMPRESA</td>
-                </tr>
-                <tr>
-                    <td>Razão Social:</td>
-                    <td>POLLO PROMOTORA LTDA</td>
-                </tr>
-                <tr>
-                    <td>CNPJ:</td>
-                    <td>44.906.703/0001-59</td>
-                </tr>
-                <tr>
-                    <td>Logradouro:</td>
-                    <td>CSE 06 LOTE 30 SALA 205</td>
-                </tr>
-                <tr>
-                    <td>Cidade:</td>
-                    <td>BRASÍLIA</td>
-                </tr>
-                <tr>
-                    <td>Estado:</td>
-                    <td>DF CEP: 72025065</td>
-                </tr>
-            </table>
 
+            <div class="bloco-dados">
+                <h3 class="bloco-titulo">DADOS DO CLIENTE</h3>
+                <p class="dado-linha">
+                    <strong>Nome do Cliente:</strong>
+                    <span id="doc-nome-cliente" class="variavel">[Nome Cliente]</span>
+                </p>
+                <p class="dado-linha">
+                    <strong>CPF do Cliente:</strong>
+                    <span id="doc-cpf-cliente" class="variavel">[Cpf Cliente]</span>
+                </p>
+                <p class="dado-linha">
+                    <strong>RG:</strong>
+                    <span id="doc-rg-cliente" class="variavel">[Rg Cliente]</span> <strong>Orgão Expedidor:</strong> <span
+                        id="doc-rg-emissor" class="variavel">[Rg Emissor]</span>
+                </p>
+                <p class="dado-linha">
+                    <strong>Naturalidade:</strong>
+                    <span id="doc-naturalidade" class="variavel">[Naturalidade]</span>
+                </p>
+                <p class="dado-linha">
+                    <strong>Estado Civil:</strong>
+                    <span id="doc-estado-civil" class="variavel">[Estado Civil]</span>
+                </p>
+                <p class="dado-linha">
+                    <strong>Profissão:</strong>
+                    <span id="doc-profissao" class="variavel">[Profissao]</span>
+                </p>
+                <p class="dado-linha">
+                    <strong>Vinculado ao Órgão:</strong>
+                    <span id="doc-orgao-vinculado" class="variavel">[Orgao Vinculado]</span>
+                </p>
+                <p class="dado-linha">
+                    <strong>Nome do Pai:</strong>
+                    <span id="doc-nome-pai" class="variavel">[Nome Pai]</span>
+                </p>
+                <p class="dado-linha">
+                    <strong>Nome da Mãe:</strong>
+                    <span id="doc-nome-mae" class="variavel">[Nome Mae]</span>
+                </p>
+                <p class="dado-linha">
+                    <strong>Tel./Whatsapp:</strong>
+                    <span id="doc-telefone" class="variavel">[Telefone]</span> <strong>E-mail:</strong> <span id="doc-email"
+                        class="variavel">[Email]</span>
+                </p>
+                <p class="dado-linha">
+                    <strong>Logradouro:</strong>
+                    <span id="doc-logradouro" class="variavel">[Logradouro]</span>
+                </p>
+                <p class="dado-linha">
+                    <strong>Bairro:</strong>
+                    <span id="doc-bairro" class="variavel">[Bairro]</span>
+                </p>
+                <p class="dado-linha">
+                    <strong>Cidade:</strong>
+                    <span id="doc-cidade" class="variavel">[Cidade]</span>
+                </p>
+                <p class="dado-linha" style="border-bottom: 1px solid #000;"> <strong>Estado:</strong>
+                    <span id="doc-estado" class="variavel">[Estado]</span> <strong>CEP:</strong> <span id="doc-cep"
+                        class="variavel">[Cep]</span>
+                </p>
+            </div>
+            <div class="bloco-dados">
+                <h3 class="bloco-titulo">DADOS DA EMPRESA</h3>
+                <p class="dado-linha"><strong>Razão Social:</strong> POLLO PROMOTORA LTDA</p>
+                <p class="dado-linha"><strong>CNPJ:</strong> 44.906.703/0001-59</p>
+                <p class="dado-linha"><strong>Logradouro:</strong> CSE 06 LOTE 30 SALA 205</p>
+                <p class="dado-linha"><strong>Cidade:</strong> BRASÍLIA</p>
+                <p class="dado-linha" style="border-bottom: 1px solid #000;"> <strong>Estado:</strong> DF <strong>CEP:</strong> 72025065
+                </p>
+            </div>
             <table class="preview-table preview-table-contratos">
                 <thead>
                     <tr>
