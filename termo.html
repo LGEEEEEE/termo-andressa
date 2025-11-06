@@ -21,687 +21,561 @@
     <script src='https://cdn.jsdelivr.net/npm/tesseract.js@latest/dist/tesseract.min.js'></script>
 
     <style>
-        /* --- CORREÇÃO DE LAYOUT --- */
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f0f2f5;
-            display: flex;
-            align-items: flex-start;
-            justify-content: center;
-            /* Centraliza o conteúdo */
-            gap: 30px;
-            padding: 20px;
-            font-size: 14px;
-            flex-wrap: wrap;
-            /* <<< CORREÇÃO: Faz o preview quebrar para baixo em telas pequenas */
-        }
+    /* --- CORREÇÃO DE LAYOUT GERAL DA PÁGINA WEB --- */
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f0f2f5;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        gap: 30px;
+        padding: 20px;
+        font-size: 14px;
+        flex-wrap: wrap;
+    }
 
-        #form-container {
-            flex: 0 0 450px;
-            background: #ffffff;
-            padding: 25px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-            position: sticky;
-            top: 20px;
-            max-height: 95vh;
-            overflow-y: auto;
-        }
+    #form-container {
+        flex: 0 0 450px;
+        background: #ffffff;
+        padding: 25px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        position: sticky;
+        top: 20px;
+        max-height: 95vh;
+        overflow-y: auto;
+    }
 
-        #form-container h1 {
-            text-align: center;
-            margin-top: 0;
-            margin-bottom: 25px;
-            font-size: 1.5rem;
-            color: #333;
-            /* NOVO: Estilo para o H1 conter o botão de Sair */
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+    #form-container h1 {
+        text-align: center;
+        margin-top: 0;
+        margin-bottom: 25px;
+        font-size: 1.5rem;
+        color: #333;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
 
-        /* NOVO: Botão de Sair (Logout) */
-        #btn-logout {
-            font-size: 0.8rem;
-            font-weight: bold;
-            padding: 5px 10px;
-            border: 1px solid #dc3545;
-            color: #dc3545;
-            background: #fff;
-            border-radius: 4px;
-            cursor: pointer;
-        }
+    #btn-logout {
+        font-size: 0.8rem;
+        font-weight: bold;
+        padding: 5px 10px;
+        border: 1px solid #dc3545;
+        color: #dc3545;
+        background: #fff;
+        border-radius: 4px;
+        cursor: pointer;
+    }
 
-        #btn-logout:hover {
-            background: #dc3545;
-            color: #fff;
-        }
+    #btn-logout:hover {
+        background: #dc3545;
+        color: #fff;
+    }
 
-        .form-section {
-            margin-bottom: 20px;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 20px;
-        }
+    .form-section {
+        margin-bottom: 20px;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 20px;
+    }
 
-        .form-section:last-of-type {
-            border-bottom: none;
-            padding-bottom: 0;
-        }
+    .form-section:last-of-type {
+        border-bottom: none;
+        padding-bottom: 0;
+    }
 
-        .form-section h2 {
-            font-size: 1.1rem;
-            color: #333;
-            margin-top: 0;
-            margin-bottom: 15px;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 5px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+    .form-section h2 {
+        font-size: 1.1rem;
+        color: #333;
+        margin-top: 0;
+        margin-bottom: 15px;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 5px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
 
-        .form-section h2 .btn-limpar {
-            font-size: 0.8rem;
-            font-weight: normal;
-            padding: 2px 8px;
-            border: 1px solid #dc3545;
-            color: #dc3545;
-            background: #fff;
-            border-radius: 4px;
-            cursor: pointer;
-        }
+    .form-section h2 .btn-limpar {
+        font-size: 0.8rem;
+        font-weight: normal;
+        padding: 2px 8px;
+        border: 1px solid #dc3545;
+        color: #dc3545;
+        background: #fff;
+        border-radius: 4px;
+        cursor: pointer;
+    }
 
-        .form-section h2 .btn-limpar:hover {
-            background: #dc3545;
-            color: #fff;
-        }
+    .form-section h2 .btn-limpar:hover {
+        background: #dc3545;
+        color: #fff;
+    }
 
-        .form-group {
-            margin-bottom: 15px;
-        }
+    .form-group {
+        margin-bottom: 15px;
+    }
 
-        .form-group label {
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+        font-size: 0.9rem;
+        color: #555;
+    }
+
+    .form-group input[type="text"] {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-sizing: border-box;
+    }
+
+    .grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+
+    .grid-3 {
+        display: grid;
+        grid-template-columns: 1fr 1fr 80px;
+        gap: 10px;
+    }
+
+    .grid-4-dinamico {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr 1fr 30px;
+        gap: 10px;
+        align-items: flex-end;
+    }
+
+    .grid-4-dinamico .form-group {
+        margin-bottom: 0;
+    }
+
+    .grid-4-dinamico label,
+    .grid-2 label,
+    .grid-3 label {
+        font-size: 0.8rem;
+    }
+
+    #gerar-pdf {
+        display: block;
+        width: 100%;
+        padding: 12px;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        font-size: 1rem;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        background-color: #007bff;
+    }
+
+    #gerar-pdf:hover:not(:disabled) {
+        background-color: #0056b3;
+    }
+
+    #gerar-pdf:disabled {
+        background-color: #aaa;
+        cursor: not-allowed;
+    }
+
+    /* --- ÁREA DE PREVIEW DO DOCUMENTO --- */
+    #preview-container {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        min-width: 160mm;
+    }
+
+    #documento-completo {
+        width: 160mm;
+        padding: 0;
+        margin: 0;
+        background: #ffffff;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        box-sizing: border-box;
+        font-family: 'Times New Roman', Times, serif;
+        color: #000;
+        font-size: 10pt;
+        line-height: 1.5;
+    }
+
+    .variavel {
+        font-weight: bold;
+        color: #0d47a1;
+        transition: color 0.3s ease;
+        display: inline;
+        line-height: 1.2;
+    }
+
+    .generating-pdf .variavel {
+        color: #000;
+        font-weight: normal;
+    }
+
+    #documento-completo p {
+        text-align: left;
+        margin-bottom: 15px;
+        text-indent: 50px;
+        word-wrap: break-word;
+    }
+
+    #documento-completo .no-indent {
+        text-indent: 0;
+    }
+
+    #documento-completo .clausula {
+        font-weight: bold;
+        text-transform: uppercase;
+        margin-top: 20px;
+        margin-bottom: 10px;
+        text-indent: 0;
+    }
+
+    #documento-completo .paragrafo {
+        margin-left: 25px;
+        text-indent: 0;
+    }
+
+    #documento-completo .data-local {
+        text-align: center;
+        margin-top: 30px;
+        text-indent: 0;
+        page-break-inside: avoid !important;
+    }
+
+    /* --- ESTILOS DE TABELA CORRIGIDOS PARA PDF --- */
+    .preview-table {
+        width: 100%;
+        table-layout: fixed;
+        border-collapse: collapse;
+        margin-bottom: 20px; /* Aumentado um pouco para dar respiro */
+    }
+
+    /* Correção específica para a tabela de contratos não quebrar errado */
+    .preview-table-contratos {
+        table-layout: fixed;
+        margin-top: 20px; /* Empurra um pouco para baixo, ajuda na quebra */
+        page-break-inside: avoid; /* Tenta NÃO quebrar a tabela ao meio */
+    }
+
+    .preview-table-contratos thead {
+        display: table-header-group; /* Repete cabeçalho se quebrar (fallback) */
+    }
+
+    .preview-table-contratos tr {
+        page-break-inside: avoid; /* Não quebra uma linha de dados ao meio */
+        page-break-after: auto;
+    }
+
+    .preview-table td, 
+    .preview-table th {
+        border: 1px solid #000;
+        padding: 4px 6px;
+        vertical-align: middle; /* Melhor alinhamento vertical */
+    }
+
+    .preview-table-contratos th {
+        font-weight: bold;
+        text-align: center;
+        background-color: #f2f2f2;
+        white-space: normal;
+        overflow-wrap: break-word;
+        word-break: break-word;
+    }
+
+    .preview-table-contratos td {
+        text-align: center;
+        white-space: normal;
+        overflow-wrap: break-word;
+    }
+
+    .placeholder-row td {
+        color: #999;
+        text-align: center;
+        font-style: italic;
+    }
+
+    /* --- BLOCOS DE DADOS (CLIENTE/EMPRESA) --- */
+    .bloco-dados {
+        margin-bottom: 15px;
+        page-break-inside: avoid; /* Evita quebrar o bloco de dados do cliente ao meio */
+    }
+
+    .bloco-titulo {
+        text-align: center;
+        font-weight: bold;
+        background-color: #f2f2f2;
+        padding: 4px 6px;
+        border: 1px solid #000;
+        font-size: 10pt;
+        margin: 0;
+        border-bottom: none;
+    }
+
+    .bloco-dados .dado-linha {
+        margin: 0;
+        padding: 4px 6px;
+        text-indent: 0;
+        border-left: 1px solid #000;
+        border-right: 1px solid #000;
+        border-bottom: 1px solid #eee;
+        line-height: 1.4;
+    }
+
+    .bloco-dados .dado-linha:last-child {
+        border-bottom: 1px solid #000; /* Fecha a borda no último item */
+    }
+
+    .bloco-dados .dado-linha strong {
+        font-weight: bold;
+    }
+
+    /* --- ASSINATURAS --- */
+    .assinatura-bloco {
+        margin-top: 40px;
+        text-indent: 0;
+        font-weight: bold;
+        page-break-inside: avoid !important; /* Nunca quebrar assinaturas */
+        display: table;
+        width: 100%;
+        table-layout: fixed;
+    }
+
+    #primeira-assinatura {
+        margin-bottom: 30px; /* Espaço após a primeira assinatura */
+    }
+
+    .assinatura-bloco span {
+        text-align: center;
+        display: table-cell;
+        width: 50%;
+        vertical-align: top;
+    }
+
+    .assinatura-bloco .contratado {
+        text-align: right; /* Mantém alinhado à direita visualmente se preferir, ou mude para center */
+    }
+
+    /* --- COMPONENTES DA INTERFACE (TOAST, MODAL, LOADING) --- */
+    .toast-container {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1090;
+    }
+
+    .toast {
+        width: 350px;
+        max-width: 90%;
+        background-color: #333;
+        color: white;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        opacity: 0;
+        transition: opacity 0.3s, transform 0.3s;
+        transform: translateX(100%);
+    }
+
+    .toast.show {
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+    .toast.bg-success { background-color: #198754; }
+    .toast.bg-danger { background-color: #dc3545; }
+    .toast.bg-warning { background-color: #ffc107; color: #000; }
+
+    .upload-area {
+        border: 2px dashed #007bff;
+        padding: 20px;
+        text-align: center;
+        cursor: pointer;
+        background-color: #f8f9fa;
+        transition: background-color 0.2s, border-color 0.2s;
+        border-radius: 8px;
+        margin-bottom: 15px;
+    }
+
+    .upload-area.hover {
+        background-color: #e9ecef;
+        border-color: #0056b3;
+    }
+
+    #pdf-upload { display: none; }
+    .upload-area span { font-weight: bold; color: #007bff; }
+
+    #loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 2000;
+        display: none;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        color: white;
+    }
+
+    .spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #007bff;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    #loading-text { margin-top: 15px; font-size: 1.1rem; }
+
+    #contract-modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 1050;
+        display: none;
+        justify-content: center;
+        align-items: center;
+    }
+
+    #contract-modal {
+        background: #fff;
+        border-radius: 8px;
+        width: 90%;
+        max-width: 600px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        display: flex;
+        flex-direction: column;
+        max-height: 80vh;
+    }
+
+    #contract-modal-header {
+        padding: 15px 20px;
+        border-bottom: 1px solid #eee;
+    }
+
+    #contract-modal-header h3 { margin: 0; font-size: 1.25rem; }
+
+    #contract-modal-body {
+        padding: 20px;
+        overflow-y: auto;
+    }
+
+    #contract-list .form-check {
+        display: block;
+        padding: 10px 12px;
+        border-bottom: 1px solid #f0f0f0;
+        cursor: pointer;
+        border-radius: 4px;
+    }
+
+    #contract-list .form-check:hover { background-color: #f8f9fa; }
+
+    .form-check.select-all {
+        font-weight: bold;
+        background-color: #f0f2f5;
+    }
+
+    #contract-modal-footer {
+        padding: 15px 20px;
+        border-top: 1px solid #eee;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+    }
+
+    .modal-btn {
+        padding: 8px 15px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+    }
+
+    .btn-primary { background-color: #007bff; color: white; }
+    .btn-primary:hover { background-color: #0056b3; }
+    .btn-secondary { background-color: #6c757d; color: white; }
+    .btn-secondary:hover { background-color: #5a6268; }
+
+    #btn-add-contrato {
+        width: 100%;
+        margin-top: 15px;
+        padding: 10px;
+        background: #e6f7ff;
+        border: 1px dashed #007bff;
+        color: #007bff;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+
+    #btn-add-contrato:hover { background: #d0ebff; }
+
+    .btn-remover-contrato {
+        background: #dc3545;
+        color: white;
+        border: none;
+        width: 30px;
+        height: 30px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+        font-size: 1.2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding-bottom: 3px;
+    }
+
+    .btn-remover-contrato:hover { background: #c82333; }
+
+    /* --- ESTILOS ESPECÍFICOS PARA QUANDO O PDF ESTÁ SENDO GERADO --- */
+    @media print, (min-width: 0px) {
+        .jsPDF-native-generating {
             display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-            font-size: 0.9rem;
-            color: #555;
-        }
-
-        .form-group input[type="text"] {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-
-        .grid-2 {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
-
-        .grid-3 {
-            display: grid;
-            grid-template-columns: 1fr 1fr 80px;
-            gap: 10px;
-        }
-
-        /* * ## MELHORIA: A regra '.grid-4' foi removida pois não era usada 
-         * e sua definição estava incorreta (copiada do grid-3).
-         */
-
-        /* NOVO: Grid-4 ajustado para 4 colunas + botão */
-        .grid-4-dinamico {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr 1fr 30px;
-            /* 4 campos + 1 botão */
-            gap: 10px;
-            align-items: flex-end;
-            /* Alinha o botão na base */
-        }
-
-        .grid-4-dinamico .form-group {
-            margin-bottom: 0;
-        }
-
-        /* Remove margem interna */
-
-        /* ## MELHORIA: A regra '.grid-4 label' foi substituída por '.grid-4-dinamico label' */
-        .grid-4-dinamico label,
-        .grid-2 label,
-        .grid-3 label {
-            font-size: 0.8rem;
-        }
-
-        #gerar-pdf {
-            display: block;
-            width: 100%;
-            padding: 12px;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            font-size: 1rem;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-            background-color: #007bff;
-        }
-
-        #gerar-pdf:hover:not(:disabled) {
-            background-color: #0056b3;
-        }
-
-        #gerar-pdf:disabled {
-            background-color: #aaa;
-            cursor: not-allowed;
-        }
-
-        /* --- CORREÇÃO DE LAYOUT --- */
-        #preview-container {
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            min-width: 160mm;
-            /* <<< CORREÇÃO: Garante que o container não seja espremido */
-        }
-
-        /* CSS do Documento da v7 */
-        #documento-completo {
-            width: 160mm;
-            /* Largura do conteúdo */
+            background-color: #fff;
             padding: 0;
             margin: 0;
-            background: #ffffff;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            box-sizing: border-box;
-            font-family: 'Times New Roman', Times, serif;
-            color: #000;
-            font-size: 10pt;
-            line-height: 1.5;
         }
 
-        /*
-         * 'position' e 'top' removidos daqui na correção anterior
-         * para garantir o alinhamento correto em TODAS as tabelas.
-         */
-        .variavel {
-            font-weight: bold;
-            color: #0d47a1;
-            transition: color 0.3s ease;
-            display: inline;
-            line-height: 1.2;
-            /* 'position' e 'top' removidos para alinhamento correto */
-        }
-
-        .generating-pdf .variavel {
-            color: #000;
-            font-weight: normal;
-        }
-
-        #documento-completo p {
-            text-align: left;
-            margin-bottom: 15px;
-            text-indent: 50px;
-            word-wrap: break-word;
-        }
-
-        #documento-completo .no-indent {
-            text-indent: 0;
-        }
-
-        #documento-completo .clausula {
-            font-weight: bold;
-            text-transform: uppercase;
-            margin-top: 20px;
-            margin-bottom: 10px;
-            text-indent: 0;
-        }
-
-        #documento-completo .paragrafo {
-            margin-left: 25px;
-            text-indent: 0;
-        }
-
-        #documento-completo .data-local {
-            text-align: center;
-            margin-top: 30px;
-            text-indent: 0;
-            page-break-inside: avoid !important;
-        }
-
-        .preview-table {
-            width: 100%;
-            table-layout: fixed;
-            /* Força colunas e corrige o placeholder */
-            border-collapse: collapse;
-            margin-bottom: 15px;
-            /* Espaça as tabelas (ex: Empresa e Contratos) */
-        }
-
-        .preview-table-contratos {
-            table-layout: fixed;
-        }
-
-        /* --- NOVO: Correção de Quebra de Página em Tabelas Longas --- */
-        .preview-table-contratos thead {
-            display: table-header-group;
-            /* Repete o cabeçalho na nova pág */
-        }
-
-        .preview-table-contratos tbody tr {
-            page-break-inside: avoid;
-        }
-
-        /* * ## MELHORIA: A regra duplicada de '.preview-table td' foi removida.
-         * Esta é a única regra que está sendo usada.
-         */
-        .preview-table td {
-            border: 1px solid #000;
-            padding: 4px 6px;
-            vertical-align: top;
-        }
-
-        /* ### REGRA REMOVIDA ###
-        .preview-table-dados td:first-child {
-            font-weight: bold;
-            width: 150px;
-        }
-        */
-
-        .preview-table-contratos th {
-            border: 1px solid #000;
-            padding: 4px;
-            font-weight: bold;
-            text-align: center;
-            background-color: #f2f2f2;
-            
-            /* --- ADICIONADO PARA CORRIGIR QUEBRA --- */
-            white-space: normal;
-            overflow-wrap: break-word;
-            word-break: break-word;
-            /* -------------------------------------- */
-        }
-
-        /* * ####################################
-         * ###    A CORREÇÃO ESTÁ AQUI     ###
-         * ####################################
-         *
-         * Trocado 'white-space: nowrap' por 'normal'
-         * para permitir a quebra de linha em células
-         * com texto longo, como visto na imagem.
-         */
-        .preview-table-contratos td {
-            text-align: center;
-            white-space: normal;
-            /* Permite a quebra de linha */
-            overflow-wrap: break-word;
-            /* Força a quebra de palavras/números longos */
-        }
-
-        /* NOVO: Estilo para linha placeholder da tabela */
-        .placeholder-row td {
-            color: #999;
-            text-align: center;
-            font-style: italic;
-        }
-
-        /* ### CORREÇÃO DO BLOCO DE ASSINATURA ### */
-        .assinatura-bloco {
-            margin-top: 40px;
-            text-indent: 0;
-            /* display: flex; <-- REMOVIDO */
-            /* justify-content: space-between; <-- REMOVIDO */
-            font-weight: bold;
-            page-break-inside: avoid !important;
-
-            /* ADICIONADO: Layout de tabela */
-            display: table;
-            width: 100%;
-            table-layout: fixed;
-        }
-
-        #primeira-assinatura {
-            page-break-after: always;
-        }
-
-        .assinatura-bloco span {
-            text-align: center;
-
-            /* ADICIONADO: Comportamento de célula */
-            display: table-cell;
-            width: 50%; /* Garante a divisão correta */
-            vertical-align: top;
-        }
-
-        .assinatura-bloco .contratado {
-            text-align: right;
-        }
-        
-        /* --- NOVO: Estilos para blocos de dados (Cliente/Empresa) --- */
-        .bloco-dados {
-            margin-bottom: 15px;
-            /* Mantém a separação que a tabela tinha */
-        }
-
-        .bloco-titulo {
-            text-align: center;
-            font-weight: bold;
-            background-color: #f2f2f2;
-            padding: 4px 6px;
-            border: 1px solid #000;
-            font-size: 10pt;
-            /* Mantém a fonte do doc */
-            margin: 0;
-            border-bottom: none;
-            /* O <p> de baixo cuida da borda */
-        }
-
-        .bloco-dados .dado-linha {
-            margin: 0;
-            padding: 4px 6px;
-            text-indent: 0;
-            /* Remove a indentação de parágrafo */
-            border-left: 1px solid #000;
-            /* Simula a borda da tabela */
-            border-right: 1px solid #000;
-            /* Simula a borda da tabela */
-            border-bottom: 1px solid #eee;
-            /* Linha interna suave */
-            line-height: 1.4;
-        }
-
-        .bloco-dados .dado-linha strong {
-            font-weight: bold;
-            /* Mantém o label em negrito */
-        }
-
-        /* --- FIM DOS NOVOS ESTILOS --- */
-
-
-        /* Toast (Notificações) */
-        .toast-container {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 1090;
-        }
-
-        .toast {
-            width: 350px;
-            max-width: 90%;
-            background-color: #333;
-            color: white;
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 10px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-            opacity: 0;
-            transition: opacity 0.3s, transform 0.3s;
-            transform: translateX(100%);
-        }
-
-        .toast.show {
-            opacity: 1;
-            transform: translateX(0);
-        }
-
-        .toast.bg-success {
-            background-color: #198754;
-        }
-
-        .toast.bg-danger {
-            background-color: #dc3545;
-        }
-
-        .toast.bg-warning {
-            background-color: #ffc107;
-            color: #000;
-        }
-
-        /* Estilos CSS para o Leitor de PDF (adaptado da calculadora) */
-        .upload-area {
-            border: 2px dashed #007bff;
-            padding: 20px;
-            text-align: center;
-            cursor: pointer;
-            background-color: #f8f9fa;
-            transition: background-color 0.2s, border-color 0.2s;
-            border-radius: 8px;
-            margin-bottom: 15px;
-        }
-
-        .upload-area.hover {
-            background-color: #e9ecef;
-            border-color: #0056b3;
-        }
-
-        #pdf-upload {
+        .jsPDF-native-generating #form-container,
+        .jsPDF-native-generating #toast-container,
+        .jsPDF-native-generating #loading-overlay,
+        .jsPDF-native-generating #contract-modal-overlay {
             display: none;
         }
 
-        .upload-area span {
-            font-weight: bold;
-            color: #007bff;
-        }
-
-        #loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.6);
-            z-index: 2000;
-            display: none;
-            /* Alterado para 'none' */
+        .jsPDF-native-generating #preview-container {
+            flex: none;
             justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            color: white;
-        }
-
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #007bff;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        #loading-text {
-            margin-top: 15px;
-            font-size: 1.1rem;
-        }
-
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-
-        /* Modal para Seleção de Contratos */
-        #contract-modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.6);
-            z-index: 1050;
-            display: none;
-            /* Começa escondido */
-            justify-content: center;
-            align-items: center;
-        }
-
-        #contract-modal {
-            background: #fff;
-            border-radius: 8px;
-            width: 90%;
-            max-width: 600px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-            display: flex;
-            flex-direction: column;
-            max-height: 80vh;
-        }
-
-        #contract-modal-header {
-            padding: 15px 20px;
-            border-bottom: 1px solid #eee;
-        }
-
-        #contract-modal-header h3 {
             margin: 0;
-            font-size: 1.25rem;
+            padding: 0;
         }
 
-        #contract-modal-body {
-            padding: 20px;
-            overflow-y: auto;
+        .jsPDF-native-generating #documento-completo {
+            box-shadow: none;
+            margin: 0;
         }
-
-        #contract-list .form-check {
-            display: block;
-            padding: 10px 12px;
-            border-bottom: 1px solid #f0f0f0;
-            cursor: pointer;
-            border-radius: 4px;
-        }
-
-        #contract-list .form-check:last-child {
-            border-bottom: none;
-        }
-
-        #contract-list .form-check:hover {
-            background-color: #f8f9fa;
-        }
-
-        #contract-list .form-check input {
-            margin-right: 10px;
-        }
-
-        #contract-list .form-check label {
-            cursor: pointer;
-            display: block;
-        }
-
-        #contract-list .form-check small {
-            color: #555;
-        }
-
-        .form-check.select-all {
-            font-weight: bold;
-            background-color: #f0f2f5;
-        }
-
-        #contract-modal-footer {
-            padding: 15px 20px;
-            border-top: 1px solid #eee;
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-        }
-
-        .modal-btn {
-            padding: 8px 15px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
-        .btn-primary {
-            background-color: #007bff;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background-color: #0056b3;
-        }
-
-        .btn-secondary {
-            background-color: #6c757d;
-            color: white;
-        }
-
-        .btn-secondary:hover {
-            background-color: #5a6268;
-        }
-
-        /* Estilos CSS do gerador de PDF nativo */
-        @media print,
-        (min-width: 0px) {
-            .jsPDF-native-generating {
-                display: block;
-                background-color: #fff;
-                padding: 0;
-                margin: 0;
-            }
-
-            .jsPDF-native-generating #form-container,
-            .jsPDF-native-generating #toast-container,
-            .jsPDF-native-generating #loading-overlay,
-            .jsPDF-native-generating #contract-modal-overlay {
-                display: none;
-            }
-
-            .jsPDF-native-generating #preview-container {
-                flex: none;
-                justify-content: center;
-                margin: 0;
-                padding: 0;
-            }
-
-            .jsPDF-native-generating #documento-completo {
-                box-shadow: none;
-                margin: 0;
-            }
-        }
-
-        /* --- NOVO: Estilos para botões dinâmicos --- */
-        #btn-add-contrato {
-            width: 100%;
-            margin-top: 15px;
-            padding: 10px;
-            background: #e6f7ff;
-            border: 1px dashed #007bff;
-            color: #007bff;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-
-        #btn-add-contrato:hover {
-            background: #d0ebff;
-        }
-
-        .btn-remover-contrato {
-            background: #dc3545;
-            color: white;
-            border: none;
-            width: 30px;
-            height: 30px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 1.2rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding-bottom: 3px;
-        }
-
-        .btn-remover-contrato:hover {
-            background: #c82333;
-        }
-    </style>
+    }
+</style>
 </head>
 
 <body>
