@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerador de Termo de Responsabilidade (v13-Corrigido)</title>
+    <title>Gerador de Termo de Responsabilidade (v15-Corrigido-Timeout)</title>
 
     <script>
         // SCRIPT DE GUARDA DE AUTENTICAÇÃO
@@ -14,568 +14,597 @@
             window.location.replace('index.html');
         }
     </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"
+        integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
     <script src='https://cdn.jsdelivr.net/npm/tesseract.js@latest/dist/tesseract.min.js'></script>
 
     <style>
-    /* --- CORREÇÃO DE LAYOUT GERAL DA PÁGINA WEB --- */
-    body {
-        font-family: Arial, sans-serif;
-        background-color: #f0f2f5;
-        display: flex;
-        align-items: flex-start;
-        justify-content: center;
-        gap: 30px;
-        padding: 20px;
-        font-size: 14px;
-        flex-wrap: wrap;
-    }
-
-    #form-container {
-        flex: 0 0 450px;
-        background: #ffffff;
-        padding: 25px;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-        position: sticky;
-        top: 20px;
-        max-height: 95vh;
-        overflow-y: auto;
-    }
-
-    #form-container h1 {
-        text-align: center;
-        margin-top: 0;
-        margin-bottom: 25px;
-        font-size: 1.5rem;
-        color: #333;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    #btn-logout {
-        font-size: 0.8rem;
-        font-weight: bold;
-        padding: 5px 10px;
-        border: 1px solid #dc3545;
-        color: #dc3545;
-        background: #fff;
-        border-radius: 4px;
-        cursor: pointer;
-    }
-
-    #btn-logout:hover {
-        background: #dc3545;
-        color: #fff;
-    }
-
-    .form-section {
-        margin-bottom: 20px;
-        border-bottom: 1px solid #eee;
-        padding-bottom: 20px;
-    }
-
-    .form-section:last-of-type {
-        border-bottom: none;
-        padding-bottom: 0;
-    }
-
-    .form-section h2 {
-        font-size: 1.1rem;
-        color: #333;
-        margin-top: 0;
-        margin-bottom: 15px;
-        border-bottom: 1px solid #eee;
-        padding-bottom: 5px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .form-section h2 .btn-limpar {
-        font-size: 0.8rem;
-        font-weight: normal;
-        padding: 2px 8px;
-        border: 1px solid #dc3545;
-        color: #dc3545;
-        background: #fff;
-        border-radius: 4px;
-        cursor: pointer;
-    }
-
-    .form-section h2 .btn-limpar:hover {
-        background: #dc3545;
-        color: #fff;
-    }
-
-    .form-group {
-        margin-bottom: 15px;
-    }
-
-    .form-group label {
-        display: block;
-        margin-bottom: 5px;
-        font-weight: bold;
-        font-size: 0.9rem;
-        color: #555;
-    }
-
-    .form-group input[type="text"] {
-        width: 100%;
-        padding: 10px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        box-sizing: border-box;
-    }
-
-    .grid-2 {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 10px;
-    }
-
-    .grid-3 {
-        display: grid;
-        grid-template-columns: 1fr 1fr 80px;
-        gap: 10px;
-    }
-
-    .grid-4-dinamico {
-        display: grid;
-        grid-template-columns: 1fr 1fr 1fr 1fr 30px;
-        gap: 10px;
-        align-items: flex-end;
-    }
-
-    .grid-4-dinamico .form-group {
-        margin-bottom: 0;
-    }
-
-    .grid-4-dinamico label,
-    .grid-2 label,
-    .grid-3 label {
-        font-size: 0.8rem;
-    }
-
-    #gerar-pdf {
-        display: block;
-        width: 100%;
-        padding: 12px;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        font-size: 1rem;
-        font-weight: bold;
-        cursor: pointer;
-        transition: background-color 0.3s ease;
-        background-color: #007bff;
-    }
-
-    #gerar-pdf:hover:not(:disabled) {
-        background-color: #0056b3;
-    }
-
-    #gerar-pdf:disabled {
-        background-color: #aaa;
-        cursor: not-allowed;
-    }
-
-    /* --- ÁREA DE PREVIEW DO DOCUMENTO --- */
-    #preview-container {
-        flex: 1;
-        display: flex;
-        justify-content: center;
-        min-width: 160mm;
-    }
-
-    #documento-completo {
-        width: 160mm;
-        padding: 0;
-        margin: 0;
-        background: #ffffff;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        box-sizing: border-box;
-        font-family: 'Times New Roman', Times, serif;
-        color: #000;
-        font-size: 10pt;
-        line-height: 1.5;
-    }
-
-    .variavel {
-        font-weight: bold;
-        color: #0d47a1;
-        transition: color 0.3s ease;
-        display: inline;
-        line-height: 1.2;
-    }
-
-    .generating-pdf .variavel {
-        color: #000;
-        font-weight: normal;
-    }
-
-    #documento-completo p {
-        text-align: left;
-        margin-bottom: 15px;
-        text-indent: 50px;
-        word-wrap: break-word;
-    }
-
-    #documento-completo .no-indent {
-        text-indent: 0;
-    }
-
-    #documento-completo .clausula {
-        font-weight: bold;
-        text-transform: uppercase;
-        margin-top: 20px;
-        margin-bottom: 10px;
-        text-indent: 0;
-    }
-
-    #documento-completo .paragrafo {
-        margin-left: 25px;
-        text-indent: 0;
-    }
-
-    #documento-completo .data-local {
-        text-align: center;
-        margin-top: 30px;
-        text-indent: 0;
-        page-break-inside: avoid !important;
-    }
-
-    /* --- ESTILOS DE TABELA CORRIGIDOS PARA PDF --- */
-    .preview-table {
-        width: 100%;
-        table-layout: fixed;
-        border-collapse: collapse;
-        margin-bottom: 20px; /* Aumentado um pouco para dar respiro */
-    }
-
-    /* Correção específica para a tabela de contratos não quebrar errado */
-    .preview-table-contratos {
-        table-layout: fixed;
-        margin-top: 20px; /* Empurra um pouco para baixo, ajuda na quebra */
-        page-break-inside: avoid; /* Tenta NÃO quebrar a tabela ao meio */
-    }
-
-    .preview-table-contratos thead {
-        display: table-header-group; /* Repete cabeçalho se quebrar (fallback) */
-    }
-
-    .preview-table-contratos tr {
-        page-break-inside: avoid; /* Não quebra uma linha de dados ao meio */
-        page-break-after: auto;
-    }
-
-    .preview-table td, 
-    .preview-table th {
-        border: 1px solid #000;
-        padding: 4px 6px;
-        vertical-align: middle; /* Melhor alinhamento vertical */
-    }
-
-    .preview-table-contratos th {
-        font-weight: bold;
-        text-align: center;
-        background-color: #f2f2f2;
-        white-space: normal;
-        overflow-wrap: break-word;
-        word-break: break-word;
-    }
-
-    .preview-table-contratos td {
-        text-align: center;
-        white-space: normal;
-        overflow-wrap: break-word;
-    }
-
-    .placeholder-row td {
-        color: #999;
-        text-align: center;
-        font-style: italic;
-    }
-
-    /* --- BLOCOS DE DADOS (CLIENTE/EMPRESA) --- */
-    .bloco-dados {
-        margin-bottom: 15px;
-        page-break-inside: avoid; /* Evita quebrar o bloco de dados do cliente ao meio */
-    }
-
-    .bloco-titulo {
-        text-align: center;
-        font-weight: bold;
-        background-color: #f2f2f2;
-        padding: 4px 6px;
-        border: 1px solid #000;
-        font-size: 10pt;
-        margin: 0;
-        border-bottom: none;
-    }
-
-    .bloco-dados .dado-linha {
-        margin: 0;
-        padding: 4px 6px;
-        text-indent: 0;
-        border-left: 1px solid #000;
-        border-right: 1px solid #000;
-        border-bottom: 1px solid #eee;
-        line-height: 1.4;
-    }
-
-    .bloco-dados .dado-linha:last-child {
-        border-bottom: 1px solid #000; /* Fecha a borda no último item */
-    }
-
-    .bloco-dados .dado-linha strong {
-        font-weight: bold;
-    }
-
-    /* --- ASSINATURAS --- */
-    .assinatura-bloco {
-        margin-top: 40px;
-        text-indent: 0;
-        font-weight: bold;
-        page-break-inside: avoid !important; /* Nunca quebrar assinaturas */
-        display: table;
-        width: 100%;
-        table-layout: fixed;
-    }
-
-    #primeira-assinatura {
-        margin-bottom: 30px; /* Espaço após a primeira assinatura */
-    }
-
-    .assinatura-bloco span {
-        text-align: center;
-        display: table-cell;
-        width: 50%;
-        vertical-align: top;
-    }
-
-    .assinatura-bloco .contratado {
-        text-align: right; /* Mantém alinhado à direita visualmente se preferir, ou mude para center */
-    }
-
-    /* --- COMPONENTES DA INTERFACE (TOAST, MODAL, LOADING) --- */
-    .toast-container {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 1090;
-    }
-
-    .toast {
-        width: 350px;
-        max-width: 90%;
-        background-color: #333;
-        color: white;
-        padding: 15px;
-        border-radius: 5px;
-        margin-bottom: 10px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        opacity: 0;
-        transition: opacity 0.3s, transform 0.3s;
-        transform: translateX(100%);
-    }
-
-    .toast.show {
-        opacity: 1;
-        transform: translateX(0);
-    }
-
-    .toast.bg-success { background-color: #198754; }
-    .toast.bg-danger { background-color: #dc3545; }
-    .toast.bg-warning { background-color: #ffc107; color: #000; }
-
-    .upload-area {
-        border: 2px dashed #007bff;
-        padding: 20px;
-        text-align: center;
-        cursor: pointer;
-        background-color: #f8f9fa;
-        transition: background-color 0.2s, border-color 0.2s;
-        border-radius: 8px;
-        margin-bottom: 15px;
-    }
-
-    .upload-area.hover {
-        background-color: #e9ecef;
-        border-color: #0056b3;
-    }
-
-    #pdf-upload { display: none; }
-    .upload-area span { font-weight: bold; color: #007bff; }
-
-    #loading-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.6);
-        z-index: 2000;
-        display: none;
-        justify-content: center;
-        align-items: center;
-        flex-direction: column;
-        color: white;
-    }
-
-    .spinner {
-        width: 40px;
-        height: 40px;
-        border: 4px solid #f3f3f3;
-        border-top: 4px solid #007bff;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
-
-    #loading-text { margin-top: 15px; font-size: 1.1rem; }
-
-    #contract-modal-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.6);
-        z-index: 1050;
-        display: none;
-        justify-content: center;
-        align-items: center;
-    }
-
-    #contract-modal {
-        background: #fff;
-        border-radius: 8px;
-        width: 90%;
-        max-width: 600px;
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-        display: flex;
-        flex-direction: column;
-        max-height: 80vh;
-    }
-
-    #contract-modal-header {
-        padding: 15px 20px;
-        border-bottom: 1px solid #eee;
-    }
-
-    #contract-modal-header h3 { margin: 0; font-size: 1.25rem; }
-
-    #contract-modal-body {
-        padding: 20px;
-        overflow-y: auto;
-    }
-
-    #contract-list .form-check {
-        display: block;
-        padding: 10px 12px;
-        border-bottom: 1px solid #f0f0f0;
-        cursor: pointer;
-        border-radius: 4px;
-    }
-
-    #contract-list .form-check:hover { background-color: #f8f9fa; }
-
-    .form-check.select-all {
-        font-weight: bold;
-        background-color: #f0f2f5;
-    }
-
-    #contract-modal-footer {
-        padding: 15px 20px;
-        border-top: 1px solid #eee;
-        display: flex;
-        justify-content: flex-end;
-        gap: 10px;
-    }
-
-    .modal-btn {
-        padding: 8px 15px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        font-weight: bold;
-    }
-
-    .btn-primary { background-color: #007bff; color: white; }
-    .btn-primary:hover { background-color: #0056b3; }
-    .btn-secondary { background-color: #6c757d; color: white; }
-    .btn-secondary:hover { background-color: #5a6268; }
-
-    #btn-add-contrato {
-        width: 100%;
-        margin-top: 15px;
-        padding: 10px;
-        background: #e6f7ff;
-        border: 1px dashed #007bff;
-        color: #007bff;
-        font-weight: bold;
-        cursor: pointer;
-        transition: background-color 0.2s;
-    }
-
-    #btn-add-contrato:hover { background: #d0ebff; }
-
-    .btn-remover-contrato {
-        background: #dc3545;
-        color: white;
-        border: none;
-        width: 30px;
-        height: 30px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-weight: bold;
-        font-size: 1.2rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding-bottom: 3px;
-    }
-
-    .btn-remover-contrato:hover { background: #c82333; }
-
-    /* --- ESTILOS ESPECÍFICOS PARA QUANDO O PDF ESTÁ SENDO GERADO --- */
-    @media print, (min-width: 0px) {
-        .jsPDF-native-generating {
-            display: block;
-            background-color: #fff;
-            padding: 0;
-            margin: 0;
+        /* --- CORREÇÃO DE LAYOUT --- */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            gap: 30px;
+            padding: 20px;
+            font-size: 14px;
+            flex-wrap: wrap;
         }
 
-        .jsPDF-native-generating #form-container,
-        .jsPDF-native-generating #toast-container,
-        .jsPDF-native-generating #loading-overlay,
-        .jsPDF-native-generating #contract-modal-overlay {
+        #form-container {
+            flex: 0 0 450px;
+            background: #ffffff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            position: sticky;
+            top: 20px;
+            max-height: 95vh;
+            overflow-y: auto;
+        }
+
+        #form-container h1 {
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: 25px;
+            font-size: 1.5rem;
+            color: #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #btn-logout {
+            font-size: 0.8rem;
+            font-weight: bold;
+            padding: 5px 10px;
+            border: 1px solid #dc3545;
+            color: #dc3545;
+            background: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        #btn-logout:hover {
+            background: #dc3545;
+            color: #fff;
+        }
+
+        .form-section {
+            margin-bottom: 20px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 20px;
+        }
+
+        .form-section:last-of-type {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .form-section h2 {
+            font-size: 1.1rem;
+            color: #333;
+            margin-top: 0;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .form-section h2 .btn-limpar {
+            font-size: 0.8rem;
+            font-weight: normal;
+            padding: 2px 8px;
+            border: 1px solid #dc3545;
+            color: #dc3545;
+            background: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .form-section h2 .btn-limpar:hover {
+            background: #dc3545;
+            color: #fff;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            color: #555;
+        }
+
+        .form-group input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 80px;
+            gap: 10px;
+        }
+
+        .grid-4-dinamico {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr 30px;
+            gap: 10px;
+            align-items: flex-end;
+        }
+
+        .grid-4-dinamico .form-group {
+            margin-bottom: 0;
+        }
+
+        .grid-4-dinamico label,
+        .grid-2 label,
+        .grid-3 label {
+            font-size: 0.8rem;
+        }
+
+        #gerar-pdf {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            background-color: #007bff;
+        }
+
+        #gerar-pdf:hover:not(:disabled) {
+            background-color: #0056b3;
+        }
+
+        #gerar-pdf:disabled {
+            background-color: #aaa;
+            cursor: not-allowed;
+        }
+
+        /* --- PREVIEW E DOCUMENTO --- */
+        #preview-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            min-width: 1mm;
+        }
+
+        #documento-completo {
+            width: 158mm;
+            padding: 0;
+            margin: 0;
+            background: #ffffff;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            box-sizing: border-box;
+            font-family: 'Times New Roman', Times, serif;
+            color: #000;
+            font-size: 10pt;
+            line-height: 1.5;
+        }
+
+        .variavel {
+            font-weight: bold;
+            color: #0d47a1;
+            transition: color 0.3s ease;
+            display: inline;
+            
+            
+        }
+
+        .generating-pdf .variavel {
+            color: #000;
+            font-weight: normal;
+        }
+
+        #documento-completo p {
+            text-align: left;
+            margin-bottom: 15px;
+            text-indent: 50px;
+            word-wrap: break-word;
+        }
+
+        #documento-completo .no-indent {
+            text-indent: 0;
+        }
+
+        #documento-completo .clausula {
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            text-indent: 0;
+        }
+
+        #documento-completo .paragrafo {
+            margin-left: 25px;
+            text-indent: 0;
+        }
+
+        #documento-completo .data-local {
+            text-align: center;
+            margin-top: 30px;
+            text-indent: 0;
+            page-break-inside: avoid !important;
+        }
+
+        /* --- SOLUÇÃO "EXPLICITA" PARA QUEBRA DE PÁGINA --- */
+        .quebra-pagina-explicita {
+            display: block;
+            height: 1px;
+            width: 100%;
+            page-break-before: always !important;
+            break-before: always !important;
+            margin: 0;
+            padding: 0;
+            visibility: hidden;
+        }
+
+        /* --- ESTILOS DE TABELA --- */
+        .preview-table {
+            width: 100%;
+            table-layout: fixed;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            /* Espaço padrão abaixo das tabelas */
+        }
+
+        .preview-table-contratos {
+            table-layout: fixed;
+            margin-top: 30px;
+        }
+
+        /* AJUSTE: Tabela "BANCO NOVO" tem menos espaço embaixo */
+        #tabela-banco-novo {
+            margin-bottom: 0;
+            /* Remove a margem de baixo */
+        }
+
+        .preview-table-contratos th {
+            border: 1px solid #000;
+            padding: 4px;
+            font-weight: bold;
+            text-align: center;
+            background-color: #f2f2f2;
+            white-space: normal;
+            overflow-wrap: break-word;
+            word-break: break-word;
+        }
+
+        .preview-table-contratos td {
+            border: 1px solid #000;
+            padding: 4px 6px;
+            vertical-align: middle;
+            text-align: center;
+            white-space: normal;
+            overflow-wrap: break-word;
+        }
+
+        /* --- BLOCOS DE DADOS --- */
+        /* CORREÇÃO (Imagem 1): Aumentado espaço entre blocos (Page 1) */
+        .bloco-dados {
+            margin-bottom: 40px;
+        }
+
+        .bloco-titulo {
+            text-align: center;
+            font-weight: bold;
+            background-color: #f2f2f2;
+            padding: 4px 6px;
+            border: 1px solid #000;
+            font-size: 10pt;
+            margin: 0;
+            border-bottom: none;
+        }
+
+        .bloco-dados .dado-linha {
+            margin: 0;
+            padding: 4px 6px;
+            text-indent: 0;
+            border-left: 1px solid #000;
+            border-right: 1px solid #000;
+            border-bottom: 1px solid #eee;
+            line-height: 1.4;
+        }
+
+        .bloco-dados .dado-linha:last-child {
+            border-bottom: 1px solid #000;
+        }
+
+        .bloco-dados .dado-linha strong {
+            font-weight: bold;
+        }
+
+        /* --- ASSINATURAS --- */
+        .assinatura-bloco {
+            margin-top: 40px;
+            text-indent: 0;
+            font-weight: bold;
+            page-break-inside: avoid !important;
+            display: table;
+            width: 100%;
+            table-layout: fixed;
+            line-height: 1.2;
+        }
+
+        #primeira-assinatura {
+            margin-bottom: 30px;
+        }
+
+        .assinatura-bloco span {
+            text-align: center;
+            display: table-cell;
+            width: 50%;
+            vertical-align: top;
+            line-height: 1.2;
+            /* <-- ADICIONE ESTA LINHA */
+        }
+
+        /* CORREÇÃO (Imagem 2): Grupo de valores de texto (Page 2) */
+        .grupo-valores-texto {
+            margin-top: 10px;
+            /* Espaço pequeno após a tabela */
+            margin-bottom: 15px;
+            /* Espaço padrão antes do próximo parágrafo */
+        }
+
+        /* CORREÇÃO (Imagem 2): Reduz espaço entre as linhas de valor */
+        .grupo-valores-texto p {
+            margin-bottom: 5px;
+        }
+
+        /* --- OUTROS COMPONENTES --- */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1090;
+        }
+
+        .toast {
+            width: 350px;
+            max-width: 90%;
+            background-color: #333;
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            opacity: 0;
+            transition: opacity 0.3s, transform 0.3s;
+            transform: translateX(100%);
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .toast.bg-success {
+            background-color: #198754;
+        }
+
+        .toast.bg-danger {
+            background-color: #dc3545;
+        }
+
+        .toast.bg-warning {
+            background-color: #ffc107;
+            color: #000;
+        }
+
+        .upload-area {
+            border: 2px dashed #007bff;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            background-color: #f8f9fa;
+            transition: background-color 0.2s, border-color 0.2s;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .upload-area.hover {
+            background-color: #e9ecef;
+            border-color: #0056b3;
+        }
+
+        #pdf-upload {
             display: none;
         }
 
-        .jsPDF-native-generating #preview-container {
-            flex: none;
-            justify-content: center;
-            margin: 0;
-            padding: 0;
+        .upload-area span {
+            font-weight: bold;
+            color: #007bff;
         }
 
-        .jsPDF-native-generating #documento-completo {
-            box-shadow: none;
-            margin: 0;
+        #loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 2000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            color: white;
         }
-    }
-</style>
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        #contract-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 1050;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #contract-modal {
+            background: #fff;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            max-height: 80vh;
+        }
+
+        #contract-modal-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid #eee;
+        }
+
+        #contract-modal-body {
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        #contract-list .form-check {
+            display: block;
+            padding: 10px 12px;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+        }
+
+        #contract-modal-footer {
+            padding: 15px 20px;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .modal-btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        #btn-add-contrato {
+            width: 100%;
+            margin-top: 15px;
+            padding: 10px;
+            background: #e6f7ff;
+            border: 1px dashed #007bff;
+            color: #007bff;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .btn-remover-contrato {
+            background: #dc3545;
+            color: white;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding-bottom: 3px;
+        }
+
+        /* * ESTA CLASSE É A SOLUÇÃO PARA O html2pdf.js
+         * Ela é ativada no <body> via JS antes de gerar o PDF
+         * e removida depois.
+        */
+        @media print,
+        (min-width: 0px) {
+            .jsPDF-native-generating {
+                display: block;
+                background-color: #fff;
+                padding: 0;
+                margin: 0;
+            }
+
+            /* Esconde tudo que NÃO é o documento */
+            .jsPDF-native-generating #form-container,
+            .jsPDF-native-generating .toast-container,
+            .jsPDF-native-generating #loading-overlay,
+            .jsPDF-native-generating #contract-modal-overlay {
+                display: none;
+            }
+
+            /* Faz o container do preview ocupar a tela toda */
+            .jsPDF-native-generating #preview-container {
+                flex: none;
+                justify-content: flex-start;
+                /* Alinha na esquerda */
+                margin: 0;
+                padding: 0;
+                min-width: 0;
+            }
+
+            /* Remove sombras e margens do documento */
+            .jsPDF-native-generating #documento-completo {
+                box-shadow: none;
+                margin: 0;
+            }
+        }
+    </style>
 </head>
 
 <body>
@@ -723,74 +752,80 @@
             <div class="bloco-dados">
                 <h3 class="bloco-titulo">DADOS DO CLIENTE</h3>
                 <p class="dado-linha">
-                    <strong>Nome do Cliente:</strong>
+                    Nome do Cliente:
                     <span id="doc-nome-cliente" class="variavel">[Nome Cliente]</span>
                 </p>
                 <p class="dado-linha">
-                    <strong>CPF do Cliente:</strong>
+                    CPF do Cliente:
                     <span id="doc-cpf-cliente" class="variavel">[Cpf Cliente]</span>
                 </p>
                 <p class="dado-linha">
-                    <strong>RG:</strong>
-                    <span id="doc-rg-cliente" class="variavel">[Rg Cliente]</span> <strong>Orgão Expedidor:</strong> <span
-                        id="doc-rg-emissor" class="variavel">[Rg Emissor]</span>
+                    RG:
+                    <span id="doc-rg-cliente" class="variavel">[Rg Cliente]</span> Orgão Expedidor:
+                    <span id="doc-rg-emissor" class="variavel">[Rg Emissor]</span>
                 </p>
                 <p class="dado-linha">
-                    <strong>Naturalidade:</strong>
+                    Naturalidade:
                     <span id="doc-naturalidade" class="variavel">[Naturalidade]</span>
                 </p>
                 <p class="dado-linha">
-                    <strong>Estado Civil:</strong>
+                    Estado Civil:
                     <span id="doc-estado-civil" class="variavel">[Estado Civil]</span>
                 </p>
                 <p class="dado-linha">
-                    <strong>Profissão:</strong>
+                    Profissão:
                     <span id="doc-profissao" class="variavel">[Profissao]</span>
                 </p>
                 <p class="dado-linha">
-                    <strong>Vinculado ao Órgão:</strong>
+                    Vinculado ao Órgão:
                     <span id="doc-orgao-vinculado" class="variavel">[Orgao Vinculado]</span>
                 </p>
                 <p class="dado-linha">
-                    <strong>Nome do Pai:</strong>
+                    Nome do Pai:
                     <span id="doc-nome-pai" class="variavel">[Nome Pai]</span>
                 </p>
                 <p class="dado-linha">
-                    <strong>Nome da Mãe:</strong>
+                    Nome da Mãe:
                     <span id="doc-nome-mae" class="variavel">[Nome Mae]</span>
                 </p>
                 <p class="dado-linha">
-                    <strong>Tel./Whatsapp:</strong>
-                    <span id="doc-telefone" class="variavel">[Telefone]</span> <strong>E-mail:</strong> <span id="doc-email"
+                    Tel./Whatsapp:
+                    <span id="doc-telefone" class="variavel">[Telefone]</span> E-mail: <span id="doc-email"
                         class="variavel">[Email]</span>
                 </p>
                 <p class="dado-linha">
-                    <strong>Logradouro:</strong>
+                    Logradouro:
                     <span id="doc-logradouro" class="variavel">[Logradouro]</span>
                 </p>
                 <p class="dado-linha">
-                    <strong>Bairro:</strong>
+                    Bairro:
                     <span id="doc-bairro" class="variavel">[Bairro]</span>
                 </p>
                 <p class="dado-linha">
-                    <strong>Cidade:</strong>
+                    Cidade:
                     <span id="doc-cidade" class="variavel">[Cidade]</span>
                 </p>
-                <p class="dado-linha" style="border-bottom: 1px solid #000;"> <strong>Estado:</strong>
-                    <span id="doc-estado" class="variavel">[Estado]</span> <strong>CEP:</strong> <span id="doc-cep"
+                <p class="dado-linha" style="border-bottom: 1px solid #000;"> Estado:
+                    <span id="doc-estado" class="variavel">[Estado]</span> CEP: <span id="doc-cep"
                         class="variavel">[Cep]</span>
                 </p>
             </div>
+
             <div class="bloco-dados">
                 <h3 class="bloco-titulo">DADOS DA EMPRESA</h3>
-                <p class="dado-linha"><strong>Razão Social:</strong> POLLO PROMOTORA LTDA</p>
-                <p class="dado-linha"><strong>CNPJ:</strong> 44.906.703/0001-59</p>
-                <p class="dado-linha"><strong>Logradouro:</strong> CSE 06 LOTE 30 SALA 205</p>
-                <p class="dado-linha"><strong>Cidade:</strong> BRASÍLIA</p>
-                <p class="dado-linha" style="border-bottom: 1px solid #000;"> <strong>Estado:</strong> DF <strong>CEP:</strong> 72025065
+                <p class="dado-linha">Razão Social: <span>POLLO PROMOTORA LTDA</span></p>
+                <p class="dado-linha">CNPJ: <span>44.906.703/0001-59</span></p>
+                <p class="dado-linha">Logradouro: <span>CSE 06 LOTE 30 SALA 205</span></p>
+                <p class="dado-linha">Cidade: <span>BRASÍLIA</span></p>
+                <p class="dado-linha" style="border-bottom: 1px solid #000;">
+                    Estado: <span>DF</span>
+                    CEP: <span>72025065</span>
                 </p>
             </div>
-            <table class="preview-table preview-table-contratos">
+
+            <div class="quebra-pagina-explicita">&nbsp;</div>
+
+            <table class="preview-table preview-table-contratos" id="tabela-quitar">
                 <thead>
                     <tr>
                         <th>BANCO A QUITAR</th>
@@ -805,18 +840,22 @@
                     </tr>
                 </tbody>
             </table>
+
             <p class="no-indent" style="font-size: 8pt; text-align: center;">Reconheço e concordo que este contrato
                 poderá ser assinado por reconhecimento de firma em cartório de notas ou de forma eletrônica, nos termos
                 da MP 2.200, sendo tal assinatura aceita e admitida como válidas pelas partes. Conforme o disposto na
                 referida MP, este Termo, quando assinado eletronicamente, é admitido como autêntico, íntegro e válido.
             </p>
+
             <div class="assinatura-bloco" id="primeira-assinatura"> <span
                     class="contratante">________________________________________<br><span id="doc-nome-cliente-ass-1"
                         class="variavel">[Nome Cliente]</span><br>CONTRATANTE</span> <span
                     class="contratado">________________________________________<br>POLLO PROMOTORA
                     LTDA<br>CONTRATADO</span> </div>
+
             <p class="clausula">CLÁUSULA PRIMEIRA - DO VALOR</p>
-            <table class="preview-table preview-table-contratos">
+
+            <table class="preview-table preview-table-contratos" id="tabela-banco-novo">
                 <thead>
                     <tr>
                         <th>BANCO NOVO</th>
@@ -836,18 +875,25 @@
                     </tr>
                 </tbody>
             </table>
-            <p class="no-indent">Valor total aproximado do contrato na nova Instituição Financeira: <span
-                    id="doc-valor-total-aproximado" class="variavel">[Valor Total Aproximado]</span></p>
-            <p class="no-indent">Valor líquido acordado para o cliente: <span id="doc-valor-liquido-cliente-texto"
-                    class="variavel">[Valor Liquido Cliente]</span></p>
-            <p class="no-indent">Valor que o cliente irá repassar para a empresa a título de restituição do valor
-                emprestado mais os valores de comissionamento e juros: <span id="doc-valor-repassar-empresa"
-                    class="variavel">[Valor Repassar Empresa]</span></p>
+
+            <div class="grupo-valores-texto">
+                <p class="no-indent">Valor total aproximado do contrato na nova Instituição Financeira: <span
+                        id="doc-valor-total-aproximado" class="variavel">[Valor Total Aproximado]</span></p>
+                <p class="no-indent">Valor líquido acordado para o cliente: <span id="doc-valor-liquido-cliente-texto"
+                        class="variavel">[Valor Liquido Cliente]</span></p>
+                <p class="no-indent">Valor que o cliente irá repassar para a empresa a título de restituição do valor
+                    emprestado mais os valores de comissionamento e juros: <span id="doc-valor-repassar-empresa"
+                        class="variavel">[Valor Repassar Empresa]</span></p>
+            </div>
+
+
+
             <p class="paragrafo">– O DEVEDOR está ciente de que, após a assinatura deste instrumento, o valor, ora
                 confessado, poderá ser diverso do informado na Item 1.1 desta Cláusula, pelo fato de que a quitação dos
                 empréstimos, quando realizada de forma antecipada, poderá gerar descontos ou acréscimos no valor, sendo
                 este fato de exclusiva responsabilidade da Instituição Financeira emissora do boleto de quitação,
                 podendo esta inclusive se recusar a prosseguir na operação.</p>
+
             <p class="clausula">CLÁUSULA SEGUNDA - DO PAGAMENTO</p>
             <p>2.1 - O DEVEDOR reconhece como legítima a dívida, ora confessada, e declara ciente de que o presente
                 instrumento atende todos os requisitos da lei. Declara-se ainda na presente oportunidade como DEVEDOR
@@ -953,8 +999,8 @@
 
 
     <script>
-        // Importa o jsPDF para o escopo local
-        const { jsPDF } = window.jspdf;
+        // --- LIMPEZA: Linha abaixo removida pois 'html2pdf.bundle.js' já contém o jsPDF
+        // const { jsPDF } = window.jspdf;
 
         // === NOVO: Configuração do PDF.js (da Calculadora) ===
         // ## MELHORIA: Trocado template literal (`) por string simples (')
@@ -1084,7 +1130,8 @@
         }
 
 
-        // --- FUNÇÃO GERAR PDF (Existente - v10) ---
+        // --- FUNÇÃO GERAR PDF (NOVA - Usando html2pdf.js) ---
+        // ***** CORREÇÃO DE LAYOUT (setTimeout) APLICADA AQUI *****
         async function gerarPdf() {
             const botao = document.getElementById('gerar-pdf');
             botao.textContent = 'Gerando PDF...';
@@ -1096,38 +1143,62 @@
 
             const documentoCompleto = document.getElementById('documento-completo');
 
-            // --- NOVO: Garante que o preview está 100% atualizado antes de gerar ---
+            // Garante que o preview está 100% atualizado antes de gerar
             atualizarPreview();
 
+            // Configurações para o html2pdf
+            const opt = {
+                // Sua margem de 2.5cm (25mm)
+                margin: [25, 25, 25, 25],
+                filename: filename,
+                image: { type: 'jpeg', quality: 0.98 }, // Imagem de alta qualidade
+                html2canvas: {
+                    scale: 2, // Dobra a resolução para melhor qualidade (anti-aliasing)
+                    useCORS: true,// Permite carregar imagens externas se houver
+                    scrollX: 0,
+                    scrollY: 0
+                },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                // Tenta respeitar as quebras de página do CSS
+                pagebreak: {
+                    mode: ['css', 'legacy', 'avoid-all'], // Tenta evitar cortes estranhos
+                    before: '.quebra-pagina-explicita' // Usa sua classe de quebra!
+                }
+            };
+
+            // Remove a classe 'variavel' para o PDF final
             documentoCompleto.classList.add('generating-pdf');
+
+            // Usa a classe CSS para esconder o formulário e resetar o layout
             document.body.classList.add('jsPDF-native-generating');
 
-            try {
-                const pdf = new jsPDF('p', 'mm', 'a4');
-                const marginMM = 25; // Sua margem de 2.5cm
-                const pdfWidth = pdf.internal.pageSize.getWidth();
-                const usableWidth = pdfWidth - (marginMM * 2); // 210mm - (25 * 2) = 160mm
-
-                await pdf.html(documentoCompleto, {
-                    callback: function (doc) {
-                        doc.save(filename);
+            // ***** CORREÇÃO: Adiciona um PEQUENO ATRASO (50ms) *****
+            // Isso força o navegador a "repintar" a tela (com o formulário oculto)
+            // ANTES do html2pdf tentar tirar a "foto".
+            // Isso corrige a "página em branco" e o "corte" no layout.
+            setTimeout(() => {
+                // Chama a nova biblioteca
+                html2pdf().from(documentoCompleto).set(opt).save()
+                    .then(() => {
+                        // Sucesso
                         showToast("PDF gerado com sucesso!");
-                    },
-                    margin: [marginMM, marginMM, marginMM, marginMM],
-                    autoPaging: 'text',
-                    width: usableWidth,
-                    windowWidth: documentoCompleto.scrollWidth
-                });
+                    })
+                    .catch((err) => {
+                        // Erro
+                        console.error("Erro ao gerar PDF:", err);
+                        showToast("Ocorreu um erro ao gerar o PDF.", "danger");
+                    })
+                    .finally(() => {
+                        // Sempre executa, limpando o estado
+                        documentoCompleto.classList.remove('generating-pdf');
 
-            } catch (error) {
-                console.error("Erro ao gerar PDF:", error);
-                showToast("Ocorreu um erro ao gerar o PDF.", "danger");
-            } finally {
-                documentoCompleto.classList.remove('generating-pdf');
-                document.body.classList.remove('jsPDF-native-generating');
-                botao.textContent = 'Gerar PDF';
-                botao.disabled = false;
-            }
+                        // Restaura o layout da página
+                        document.body.classList.remove('jsPDF-native-generating');
+
+                        botao.textContent = 'Gerar PDF';
+                        botao.disabled = false;
+                    });
+            }, 150); // 150ms de atraso é o suficiente para o DOM atualizar.
         }
 
 
@@ -1291,7 +1362,7 @@
             if (contractsApplied > 0) {
                 showToast(`${contractsApplied} contrato(s) e dados do cliente importados!`, 'success');
             } else if (nomeClienteModal !== 'Não lido' || cpfClienteModal !== 'Não lido') {
-                showToast("Dados do cliente importados!", 'success');
+                showToast("Dados do cliente importados!", "success");
             } else {
                 showToast("Nenhum contrato foi selecionado.", "warning");
             }
@@ -1314,9 +1385,6 @@
 
         // --- Lógica de Processamento de PDF (da Calculadora) ---
 
-        // =================================================================
-        // === FUNÇÃO EXÉRCITO ATUALIZADA (LÓGICA HÍBRIDA + FILTRO) ===
-        // =================================================================
         // =================================================================
         // === FUNÇÃO EXÉRCITO (Lógica Antiga Adaptada) ===
         // =================================================================
@@ -1478,6 +1546,19 @@
 
             let infoMatchNovo = text.match(infoRegexNovo);
 
+            // --- CORREÇÃO (Layout "ANTONIO JOAO") ---
+            if (!infoMatchNovo) {
+                // Regex para o layout do "ANTONIO JOAO"
+                const infoRegexAntonio = /CPF\n(?:[^\n]+\n)([^\n]+)\nMatrícula\s+(\d+)\nNome\n([A-ZÀ-Ú ]+)/;
+                const infoMatchAntonio = text.match(infoRegexAntonio);
+                if (infoMatchAntonio) {
+                    console.log("Regex SIAPE (Layout Antonio) detectado.");
+                    infoMatchNovo = [null, infoMatchAntonio[1], infoMatchAntonio[3]]; // Simula o formato do infoMatchNovo
+                }
+            }
+            // --- FIM DA CORREÇÃO ---
+
+
             if (infoMatchNovo && infoMatchNovo[1] && infoMatchNovo[2]) {
                 const cpfPotencial = infoMatchNovo[1].trim();
                 if (/\d{3}\.\d{3}\.\d{3}-\d{2}/.test(cpfPotencial) || /\d{11}/.test(cpfPotencial.replace(/[.-]/g, ''))) {
@@ -1495,16 +1576,33 @@
             const rgxEmprestimosNovo = /^([^\n]+)\n(3\d{4}\s*-\s*EMPREST[^\n]+)\n(?:.|\n)*?(R\$\s*[\d\.,]+)\n(\d{2,3}\/\d{2,3})/gm;
             let matches = [...text.matchAll(rgxEmprestimosNovo)];
 
+            // --- CORREÇÃO (Layout "ANTONIO JOAO") ---
+            if (matches.length === 0) {
+                // Regex para a tabela do "ANTONIO JOAO" 
+                // Formato: "35-868125886/21\n","34943-EMPREST...\n","1\n","10\n","...2021...\n","51/96\n","R$ 591,51\n"
+                const rgxAntonioTabela = /"([\d-]+[\/\d]*)"\s*,\s*"(\d+-EMPREST[^"]+)"\s*,\s*"\d+"\s*,\s*"\d+"\s*,\s*"[^"]+"\s*,\s*"(\d+\/\d+)"\s*,\s*"(R\$\s*[\d.,]+)"/g;
+                let matchesAntonio = [...text.matchAll(rgxAntonioTabela)];
+                console.log(`Regex SIAPE (Tabela Antonio) encontrou ${matchesAntonio.length} contratos.`);
+
+                matchesAntonio.forEach((match) => {
+                    const [_, numContrato, nomeBanco, parcelasStr, valor] = match;
+                    // Invertemos 'valor' e 'parcelasStr' para bater com a 'matches'
+                    matches.push([null, numContrato, nomeBanco, valor, parcelasStr]);
+                });
+            }
+            // --- FIM DA CORREÇÃO ---
+
+
             matches.forEach((match) => {
                 const [_, numContrato, nomeBanco, valor, parcelasStr] = match;
-                let cleanNomeBanco = nomeBanco.replace(/^\d+\s*-\s*/, '').replace('EMPREST BCO PRIVADOS - ', '').replace('EMPREST BCO OFICIAL - ', '').trim();
+                let cleanNomeBanco = nomeBanco.replace(/^\d+\s*-\s*/, '').replace('EMPREST BCO PRIVADOS - ', '').replace('EMPREST BCO OFICIAL - ', '').replace('EMPREST BCO PRIVADOS ', '').replace('EMPREST PREV PRIVADA - ', '').trim();
                 const [pagas, total] = parcelasStr.split('/');
                 const valorParcelaNum = moedaParaFloat(valor);
-                if (parseInt(total, 10) > 900) return;
+                if (parseInt(total, 10) > 900) return; // Ignora contribuições (999)
                 loansFound.push({
                     banco: cleanNomeBanco,
                     parcelaNum: valorParcelaNum,
-                    status: `${pagas} de ${total}`,
+                    status: `${pagas.trim()} de ${total.trim()}`,
                     contrato: numContrato.trim()
                 });
             });
@@ -1619,7 +1717,7 @@
                     // **** INÍCIO DA DETECÇÃO AUTOMÁTICA ****
                     let convenioDetectado = 'exercito'; // Padrão
                     // Chaves do SIAPE são mais fortes
-                    if (extractedText.includes("Extrato de Consignações Vigentes") || extractedText.includes("Rubrica\nSequência")) {
+                    if (extractedText.includes("Extrato de Consignações Vigentes") || extractedText.includes("Rubrica\nSequência") || extractedText.includes("Rubrica\n")) {
                         convenioDetectado = 'siape';
                     }
                     console.log(`Convênio detectado: ${convenioDetectado}`);
