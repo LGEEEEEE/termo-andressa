@@ -1857,64 +1857,66 @@
             
             console.log("Processando como Contracheque SERVIDOR (SGP/SIGEPE)...");
 
-            // 1. Extrair Dados do Cliente (Baseado no depurador 'Petrolinio')
+            // 1. Extrair Dados do Cliente
+            
+            // --- INÍCIO DA CORREÇÃO 7 (Corrige a Regex do Órgão) ---
 
-            // Regex para Nome:
-            // Procura (NOME) \n (Ident. Unica 9 digitos) \n (Mat. SIAPE 7 digitos)
-            const nomeMatch = text.match(/\n([A-ZÀ-Ú ]+)\s*\n\s*(\d{9})\s*\n\s*(\d{7})\s+/);
-            if (nomeMatch && nomeMatch[1]) {
-                cliente.nome = nomeMatch[1].trim();
-                console.log("Regex (Servidor Nome) A funcionou!", cliente.nome);
+            // Regex para Nome e Profissão (Combinados): (Esta já estava funcionando)
+            const nomeCargoMatch = text.match(/\n([A-ZÀ-Ú ]+)\s*\n\s*(\d{7,9})\s*\n\s*(\d{7,9})\s*\n\s*([A-ZÀ-Ú -]+)\s*\n\s*[A-Z]\s*\n\s*[A-Z]/);
+            if (nomeCargoMatch) {
+                cliente.nome = nomeCargoMatch[1].trim();
+                cliente.profissao = nomeCargoMatch[4].trim().replace(/\s+/g, ' '); // Limpa espaços extras
+                console.log("Regex (Servidor Nome/Profissao) A funcionou!", cliente.nome, cliente.profissao);
             } else {
-                console.warn("Regex (Servidor Nome) A falhou. Tentando Fallback B...");
+                console.warn("Regex (Servidor Nome/Profissao) A falhou. Tentando Fallbacks...");
                 const nomeMatchFallback = text.match(/NOME DO SERVIDOR(?:.|\n)+?([A-ZÀ-Ú ]{3,}\s[A-ZÀ-Ú ]{3,})/);
                 if(nomeMatchFallback) cliente.nome = nomeMatchFallback[1].trim();
+                const cargoMatchFallback = text.match(/CARGO\/EMPREGO(?:.|\n)+?([A-ZÀ-Ú -]+)\s*\n\s*[A-Z]\s*\n\s*[A-Z]\s+/);
+                if(cargoMatchFallback) cliente.profissao = cargoMatchFallback[1].trim().replace(/\s+/g, ' ');
             }
-
-            // Regex para Profissão (Cargo/Emprego):
-            // Procura (Mat. SIAPE 7 digitos) \n (CARGO/EMPREGO) \n (Classe) \n (Padrão)
-            const cargoMatch = text.match(/\d{7}\s*\n\s*([A-ZÀ-Ú ]+)\s*\n\s*[A-Z]\s*\n\s*[A-Z]\s+/);
-            if(cargoMatch && cargoMatch[1]) {
-                cliente.profissao = cargoMatch[1].trim(); // Ex: AGENTE ADMINISTRATIVO
-                console.log("Regex (Servidor Profissao) A funcionou!", cliente.profissao);
-            } else {
-                 console.warn("Regex (Servidor Profissao) A falhou.");
-            }
-
-            // Regex para CPF:
-            // Procura 00 \n 00 \n (CPF) \n (Banco)
-            const cpfMatch = text.match(/\n00\s*\n\s*00\s*\n\s*(\d{11})\s*\n\s*\d{3}\s+/);
-             if (cpfMatch && cpfMatch[1]) {
+            
+            // Regex para CPF: (Esta já estava funcionando)
+            const cpfMatch = text.match(/CPF\s*\n\s*(\d{11})/);
+            if (cpfMatch && cpfMatch[1]) {
                 cliente.cpf = cpfMatch[1].trim();
                 console.log("Regex (Servidor CPF) A funcionou!", cliente.cpf);
             } else {
                 console.warn("Regex (Servidor CPF) A falhou. Tentando Fallback B...");
-                 const cpfMatchFallback = text.match(/CPF(?:.|\n)+?(\d{11})/);
-                 if(cpfMatchFallback) cliente.cpf = cpfMatchFallback[1].trim();
+                 const cpfMatchFallbackB = text.match(/\n(\d{11})\s*\n\s*(\d{3})\s*\n\s*(\d{6})\s+/); // Layout Petrolinio
+                 if(cpfMatchFallbackB) {
+                     cliente.cpf = cpfMatchFallbackB[1].trim();
+                 } else {
+                    console.warn("Regex (Servidor CPF) B falhou. Tentando Fallback C...");
+                    const cpfMatchFallbackC = text.match(/\n00\s*\n\s*00\s*\n\s*(\d{11})/); // Layout Petrolinio (seguro)
+                    if(cpfMatchFallbackC) cliente.cpf = cpfMatchFallbackC[1].trim();
+                 }
             }
             
             // Regex para Órgão (Ministério):
-            // Procura (ORGÃO) \n NORMAL \n SET 2025
-            const orgaoMatch = text.match(/([A-ZÀ-Ú ]+)\s*\n\s*NORMAL\s*\n\s*(?:JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ) \d{4}/);
+            // --- ESTA É A CORREÇÃO ---
+            // Procura pelo (NOME DO ÓRGÃO) que vem antes de \n NORMAL \n [MÊS] [ANO]
+            // (Funciona para ambos os layouts de servidor)
+            const orgaoMatch = text.match(/([A-ZÀ-Ú .]+)\s*\n\s*NORMAL\s*\n\s*(?:JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ) \d{4}/);
             if (orgaoMatch && orgaoMatch[1]) {
-                cliente.orgao = orgaoMatch[1].trim(); // Ex: DEPARTAMENTO DE POLICIA FEDERAL
+                cliente.orgao = orgaoMatch[1].trim();
                 console.log("Regex (Servidor Órgão) A funcionou!", cliente.orgao);
             } else {
                 console.warn("Regex (Servidor Órgão) A falhou.");
             }
             
-            // Regex para Estado (UF):
-            // Procura (UF) \n EST \n APOSENTADO (ou outra situação)
+            // Regex para Estado (UF): (Esta já estava funcionando)
             const ufMatch = text.match(/\n([A-Z]{2})\s*\n\s*EST\s*\n\s*([A-ZÀ-Ú ]+)/);
             if (ufMatch && ufMatch[1]) {
-                cliente.estado = ufMatch[1].trim(); // Ex: ES
+                cliente.estado = ufMatch[1].trim();
                 console.log("Regex (Servidor UF) A funcionou!", cliente.estado);
             } else {
                 console.warn("Regex (Servidor UF) A falhou.");
             }
 
+            // --- FIM DA CORREÇÃO 7 ---
+
             // 2. Extrair Contratos (Descontos)
-            // Esta regex é a mesma do Pensionista, é robusta.
+            // (Esta regex já estava funcionando bem para ambos os casos)
             const descontosRegex = /(?:(\d{3})\s*\n\s*)?([\d.,]+)\s*\n\s*((?:EMPREST|AMORT)[^\n]+)/g;
             let matches = [...text.matchAll(descontosRegex)];
             
@@ -1933,7 +1935,7 @@
                 
                 if (valorParcelaNum > 5.00) {
                      loansArray.push({
-                        banco: nomeBanco,
+                        banco: nomeBanco.replace(/\s+/g, ' '), // Limpa quebras de linha no nome do banco
                         parcelaNum: valorParcelaNum,
                         status: `Prazo: ${prazo}`,
                         contrato: 'N/A'
