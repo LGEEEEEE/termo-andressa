@@ -1849,80 +1849,81 @@
         }
 
         // =================================================================
-        // === NOVO: FUNÇÃO PARA CONTRACHEQUE SGP (O seu exemplo) ===
+        // === NOVO: FUNÇÃO PARA CONTRACHEQUE SERVIDOR (Ativo/Aposentado) ===
         // =================================================================
-        async function processarPdfContrachequeSGP(text) {
-            // --- NOVO: Adicionado .profissao e .orgao ---
+        async function processarPdfContrachequeServidor(text) {
             let cliente = { nome: 'Não lido', cpf: 'Não lido', estado: '', profissao: '', orgao: '' };
             let loansArray = [];
             
-            console.log("Processando como Contracheque SGP/SIGEPE...");
+            console.log("Processando como Contracheque SERVIDOR (SGP/SIGEPE)...");
 
-            // 1. Extrair Dados do Cliente
-            
-            // --- INÍCIO DA CORREÇÃO 4 (Adiciona Função e Órgão) ---
-            
-            // Regex para Nome, Matrícula, Cargo e Função
-            // Procura por "PENSAO/AL" ... "AL", captura NOME (G1), MATRICULA (G2), CARGO (G3), FUNÇÃO (G4)
-            // O G3 (Cargo) está sendo ignorado por enquanto, mas o G4 (Função) é capturado.
-            const nomeMatch = text.match(/PENSAO\/AL\s+AL\s+([A-ZÀ-Ú ]+)\s+(\d{8}|\d{7})\s+([A-ZÀ-Ú ]+)\s+([^\n]+)/);
-            
+            // 1. Extrair Dados do Cliente (Baseado no depurador 'Petrolinio')
+
+            // Regex para Nome:
+            // Procura (NOME) \n (Ident. Unica 9 digitos) \n (Mat. SIAPE 7 digitos)
+            const nomeMatch = text.match(/\n([A-ZÀ-Ú ]+)\s*\n\s*(\d{9})\s*\n\s*(\d{7})\s+/);
             if (nomeMatch && nomeMatch[1]) {
                 cliente.nome = nomeMatch[1].trim();
-                // nomeMatch[2] é a matrícula
-                // nomeMatch[3] é o cargo (AGENTE DE PORTARIA)
-                cliente.profissao = nomeMatch[4].trim(); // Pega a FUNÇÃO (*** **** **)
-                console.log("Regex (Nome/Função) A (Depurador) funcionou!", cliente.nome, cliente.profissao);
+                console.log("Regex (Servidor Nome) A funcionou!", cliente.nome);
             } else {
-                console.warn("Regex (Nome/Função) A falhou. Tentando Fallback B...");
-                // Fallback (menos confiável)
-                const nomeMatchFallback = text.match(/NOME DO BENEFICIÁRIO DE PENSÃO(?:.|\n)+?([A-ZÀ-Ú ]{3,}\s[A-ZÀ-Ú ]{3,})/);
+                console.warn("Regex (Servidor Nome) A falhou. Tentando Fallback B...");
+                const nomeMatchFallback = text.match(/NOME DO SERVIDOR(?:.|\n)+?([A-ZÀ-Ú ]{3,}\s[A-ZÀ-Ú ]{3,})/);
                 if(nomeMatchFallback) cliente.nome = nomeMatchFallback[1].trim();
             }
 
-            // Regex para CPF (Esta já estava funcionando)
-            const cpfMatch = text.match(/\n00\s*\n\s*(\d{11})\s*\n\s*\d{3}-/);
+            // Regex para Profissão (Cargo/Emprego):
+            // Procura (Mat. SIAPE 7 digitos) \n (CARGO/EMPREGO) \n (Classe) \n (Padrão)
+            const cargoMatch = text.match(/\d{7}\s*\n\s*([A-ZÀ-Ú ]+)\s*\n\s*[A-Z]\s*\n\s*[A-Z]\s+/);
+            if(cargoMatch && cargoMatch[1]) {
+                cliente.profissao = cargoMatch[1].trim(); // Ex: AGENTE ADMINISTRATIVO
+                console.log("Regex (Servidor Profissao) A funcionou!", cliente.profissao);
+            } else {
+                 console.warn("Regex (Servidor Profissao) A falhou.");
+            }
+
+            // Regex para CPF:
+            // Procura 00 \n 00 \n (CPF) \n (Banco)
+            const cpfMatch = text.match(/\n00\s*\n\s*00\s*\n\s*(\d{11})\s*\n\s*\d{3}\s+/);
              if (cpfMatch && cpfMatch[1]) {
                 cliente.cpf = cpfMatch[1].trim();
-                console.log("Regex (CPF) A funcionou!", cliente.cpf);
+                console.log("Regex (Servidor CPF) A funcionou!", cliente.cpf);
             } else {
-                console.warn("Regex (CPF) A falhou no Contracheque. Tentando Fallback B...");
-                 // Fallback: Pega o primeiro 11-digitos depois da palavra CPF
+                console.warn("Regex (Servidor CPF) A falhou. Tentando Fallback B...");
                  const cpfMatchFallback = text.match(/CPF(?:.|\n)+?(\d{11})/);
                  if(cpfMatchFallback) cliente.cpf = cpfMatchFallback[1].trim();
             }
-
-            // --- NOVO: Regex para Órgão (Ministério) ---
-            const orgaoMatch = text.match(/([A-ZÀ-Ú ]+)\s+COMPROVANTE DE RENDIMENTOS DE BENEFICIÁRIO DE PENSÃO/);
-            if (orgaoMatch && orgaoMatch[1]) {
-                cliente.orgao = orgaoMatch[1].trim(); // Ex: MINISTERIO DA SAUDE
-                console.log("Regex (Órgão) A funcionou!", cliente.orgao);
-            } else {
-                console.warn("Regex (Órgão) A falhou.");
-            }
-            // --- FIM DA CORREÇÃO 4 ---
             
-            // Regex para Estado (UF)
-            const ufMatch = text.match(/UPAG\/([A-Z]{2})/); // Pega de "UPAG/AL"
-            if (ufMatch && ufMatch[1]) {
-                cliente.estado = ufMatch[1].trim();
+            // Regex para Órgão (Ministério):
+            // Procura (ORGÃO) \n NORMAL \n SET 2025
+            const orgaoMatch = text.match(/([A-ZÀ-Ú ]+)\s*\n\s*NORMAL\s*\n\s*(?:JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ) \d{4}/);
+            if (orgaoMatch && orgaoMatch[1]) {
+                cliente.orgao = orgaoMatch[1].trim(); // Ex: DEPARTAMENTO DE POLICIA FEDERAL
+                console.log("Regex (Servidor Órgão) A funcionou!", cliente.orgao);
             } else {
-                console.warn("Regex (UF) falhou no Contracheque");
+                console.warn("Regex (Servidor Órgão) A falhou.");
+            }
+            
+            // Regex para Estado (UF):
+            // Procura (UF) \n EST \n APOSENTADO (ou outra situação)
+            const ufMatch = text.match(/\n([A-Z]{2})\s*\n\s*EST\s*\n\s*([A-ZÀ-Ú ]+)/);
+            if (ufMatch && ufMatch[1]) {
+                cliente.estado = ufMatch[1].trim(); // Ex: ES
+                console.log("Regex (Servidor UF) A funcionou!", cliente.estado);
+            } else {
+                console.warn("Regex (Servidor UF) A falhou.");
             }
 
             // 2. Extrair Contratos (Descontos)
+            // Esta regex é a mesma do Pensionista, é robusta.
             const descontosRegex = /(?:(\d{3})\s*\n\s*)?([\d.,]+)\s*\n\s*((?:EMPREST|AMORT)[^\n]+)/g;
             let matches = [...text.matchAll(descontosRegex)];
             
             if (matches.length === 0) {
                  console.log("Regex de Desconto A falhou. Tentando Fallback (B)...");
-                 // Fallback para uma estrutura levemente diferente (sem o \n \n)
                  const descontosRegexFallback = /(?:(\d{3})\s+)?([\d.,]+)\s+((?:EMPREST|AMORT)[^\n]+)/g;
                  matches = [...text.matchAll(descontosRegexFallback)];
             }
-
-
-            console.log(`Contracheque: Encontrados ${matches.length} descontos.`);
+            console.log(`Contracheque (Servidor): Encontrados ${matches.length} descontos.`);
 
             matches.forEach((match) => {
                 const prazo = match[1] || 'N/A';
@@ -1958,7 +1959,8 @@
             const fileReader = new FileReader();
             fileReader.onload = async function () {
                 let extractedText = '';
-                let result = { loans: [], cliente: { nome: '', cpf: '', estado: '' } };
+                // (Note: 'profissao' and 'orgao' are added to the default object)
+                let result = { loans: [], cliente: { nome: '', cpf: '', estado: '', profissao: '', orgao: '' } };
                 window.ultimoClientePDF = {}; // Limpa o cliente global
 
                 try {
@@ -1975,8 +1977,9 @@
                         extractedText += textContent.items.map(item => item.str).join('\n') + '\n\n--- FIM DA PÁGINA ' + i + ' ---\n\n';
                     }
 
+                    // (hasRealData check is still good)
                     const hasRealData = extractedText.toUpperCase().includes('CONSIGNATÁRIA') || extractedText.toUpperCase().includes('EMPRÉSTIMO') || extractedText.toUpperCase().includes('CPF') || extractedText.toUpperCase().includes('RUBRICA') || extractedText.toUpperCase().includes('COMPROVANTE DE RENDIMENTOS');
-
+                    
                     if (extractedText.trim().length < 50 || !hasRealData) {
                         textFound = false;
                         console.log("Texto 'limpo' não parece válido. Forçando OCR (Plano B).");
@@ -2006,36 +2009,38 @@
                     }
                     // --- FIM DO PLANO B ---
 
-
+                    
                     // **** INÍCIO DA DETECÇÃO AUTOMÁTICA (ATUALIZADA) ****
+                    
+                    // 1. Verifica se é Contracheque de Pensionista
+                    if (extractedText.includes("DE BENEFICIÁRIO DE PENSÃO")) {
+                        console.log("Detectado: Contracheque PENSIONISTA (SGP/SIGEPE)");
+                        result = await processarPdfContrachequeSGP(extractedText); // (Chama a função antiga)
+                    
+                    // 2. Verifica se é Contracheque de Servidor (O novo)
+                    } else if (extractedText.includes("COMPROVANTE DE RENDIMENTOS - FOLHA")) {
+                        console.log("Detectado: Contracheque SERVIDOR (SGP/SIGEPE)");
+                        result = await processarPdfContrachequeServidor(extractedText); // (Chama a NOVA função)
 
-                    // 1. Verifica se é Contracheque (O seu exemplo)
-                    // === CORREÇÃO APLICADA AQUI ===
-                    if (extractedText.includes("COMPROVANTE DE RENDIMENTOS") || extractedText.includes("DADOS FINANCEIROS DO PENSIONISTA")) {
-                        console.log("Detectado: Contracheque SGP/SIGEPE");
-                        result = await processarPdfContrachequeSGP(extractedText);
-
-                        // 2. Verifica se é Extrato SIAPE
-                        // === CORREÇÃO APLICADA AQUI ===
+                    // 3. Verifica se é Extrato SIAPE
                     } else if (extractedText.includes("Extrato de Consignações Vigentes") || extractedText.includes("Rubrica\nSequência") || extractedText.includes("Rubrica\n")) {
                         console.log("Detectado: Extrato SIAPE");
                         result = await processarPdfSiape(extractedText);
-
-                        // 3. Assume Exército como padrão
+                    
+                    // 4. Assume Exército como padrão
                     } else {
                         console.log("Detectado: Extrato Exército (Padrão)");
                         result = await processarPdfExercicio(extractedText);
                     }
                     // **** FIM DA DETECÇÃO ****
 
-                    // --- NOVO: Armazena o cliente lido globalmente ---
-                    window.ultimoClientePDF = result.cliente;
+                    // --- Armazena o cliente lido globalmente ---
+                    window.ultimoClientePDF = result.cliente; 
 
                     showToast("Documento lido e convênio detectado!", "success");
                     showContractModal(result.loans, result.cliente); // Mostra o modal com os resultados
 
                 } catch (error) {
-                    // Esta é a linha 1990 (aprox) que mostrou o erro
                     console.error("Erro ao processar o PDF:", error);
                     showToast(`Erro ao ler o PDF: ${error.message}`, "danger");
                 } finally {
