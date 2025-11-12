@@ -1450,6 +1450,20 @@
             // 1. Limpa os campos de contrato dinâmicos antes de preencher
             limparCamposContrato();
 
+            // --- NOVO: SOMA AS PARCELAS E JOGA NO INPUT ---
+            let totalSomaParcelas = 0;
+            checkedBoxes.forEach(cb => {
+                totalSomaParcelas += parseFloat(cb.dataset.parcela || 0);
+            });
+
+            // Só atualiza o campo se a soma for maior que zero
+            if (totalSomaParcelas > 0) {
+                const parcelaNovaInput = document.getElementById('parcela-nova');
+                parcelaNovaInput.value = formatarMoeda(totalSomaParcelas);
+                console.log(`Soma (R$ ${totalSomaParcelas}) aplicada ao campo 'parcela-nova'.`);
+            }
+            // --- FIM DA NOVA LÓGICA ---
+
             // 2. Preenche os dados do cliente (se existirem)
             const nomeClienteModal = document.getElementById('modal-nome-cliente').textContent;
             const cpfClienteModal = document.getElementById('modal-cpf-cliente').textContent;
