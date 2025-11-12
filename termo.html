@@ -1460,7 +1460,7 @@
             if (cpfClienteModal && cpfClienteModal !== 'Não lido') {
                 document.getElementById('cpf-cliente').value = cpfClienteModal;
             }
-            
+
             // Preenche o Estado (UF) se foi lido do PDF
             if (window.ultimoClientePDF && window.ultimoClientePDF.estado) {
                 document.getElementById('estado').value = window.ultimoClientePDF.estado;
@@ -1854,11 +1854,11 @@
         async function processarPdfContrachequeServidor(text) {
             let cliente = { nome: 'Não lido', cpf: 'Não lido', estado: '', profissao: '', orgao: '' };
             let loansArray = [];
-            
+
             console.log("Processando como Contracheque SERVIDOR (SGP/SIGEPE)...");
 
             // 1. Extrair Dados do Cliente
-            
+
             // --- INÍCIO DA CORREÇÃO 7 (Corrige a Regex do Órgão) ---
 
             // Regex para Nome e Profissão (Combinados): (Esta já estava funcionando)
@@ -1870,11 +1870,11 @@
             } else {
                 console.warn("Regex (Servidor Nome/Profissao) A falhou. Tentando Fallbacks...");
                 const nomeMatchFallback = text.match(/NOME DO SERVIDOR(?:.|\n)+?([A-ZÀ-Ú ]{3,}\s[A-ZÀ-Ú ]{3,})/);
-                if(nomeMatchFallback) cliente.nome = nomeMatchFallback[1].trim();
+                if (nomeMatchFallback) cliente.nome = nomeMatchFallback[1].trim();
                 const cargoMatchFallback = text.match(/CARGO\/EMPREGO(?:.|\n)+?([A-ZÀ-Ú -]+)\s*\n\s*[A-Z]\s*\n\s*[A-Z]\s+/);
-                if(cargoMatchFallback) cliente.profissao = cargoMatchFallback[1].trim().replace(/\s+/g, ' ');
+                if (cargoMatchFallback) cliente.profissao = cargoMatchFallback[1].trim().replace(/\s+/g, ' ');
             }
-            
+
             // Regex para CPF: (Esta já estava funcionando)
             const cpfMatch = text.match(/CPF\s*\n\s*(\d{11})/);
             if (cpfMatch && cpfMatch[1]) {
@@ -1882,16 +1882,16 @@
                 console.log("Regex (Servidor CPF) A funcionou!", cliente.cpf);
             } else {
                 console.warn("Regex (Servidor CPF) A falhou. Tentando Fallback B...");
-                 const cpfMatchFallbackB = text.match(/\n(\d{11})\s*\n\s*(\d{3})\s*\n\s*(\d{6})\s+/); // Layout Petrolinio
-                 if(cpfMatchFallbackB) {
-                     cliente.cpf = cpfMatchFallbackB[1].trim();
-                 } else {
+                const cpfMatchFallbackB = text.match(/\n(\d{11})\s*\n\s*(\d{3})\s*\n\s*(\d{6})\s+/); // Layout Petrolinio
+                if (cpfMatchFallbackB) {
+                    cliente.cpf = cpfMatchFallbackB[1].trim();
+                } else {
                     console.warn("Regex (Servidor CPF) B falhou. Tentando Fallback C...");
                     const cpfMatchFallbackC = text.match(/\n00\s*\n\s*00\s*\n\s*(\d{11})/); // Layout Petrolinio (seguro)
-                    if(cpfMatchFallbackC) cliente.cpf = cpfMatchFallbackC[1].trim();
-                 }
+                    if (cpfMatchFallbackC) cliente.cpf = cpfMatchFallbackC[1].trim();
+                }
             }
-            
+
             // Regex para Órgão (Ministério):
             // --- ESTA É A CORREÇÃO ---
             // Procura pelo (NOME DO ÓRGÃO) que vem antes de \n NORMAL \n [MÊS] [ANO]
@@ -1903,7 +1903,7 @@
             } else {
                 console.warn("Regex (Servidor Órgão) A falhou.");
             }
-            
+
             // Regex para Estado (UF): (Esta já estava funcionando)
             const ufMatch = text.match(/\n([A-Z]{2})\s*\n\s*EST\s*\n\s*([A-ZÀ-Ú ]+)/);
             if (ufMatch && ufMatch[1]) {
@@ -1919,11 +1919,11 @@
             // (Esta regex já estava funcionando bem para ambos os casos)
             const descontosRegex = /(?:(\d{3})\s*\n\s*)?([\d.,]+)\s*\n\s*((?:EMPREST|AMORT)[^\n]+)/g;
             let matches = [...text.matchAll(descontosRegex)];
-            
+
             if (matches.length === 0) {
-                 console.log("Regex de Desconto A falhou. Tentando Fallback (B)...");
-                 const descontosRegexFallback = /(?:(\d{3})\s+)?([\d.,]+)\s+((?:EMPREST|AMORT)[^\n]+)/g;
-                 matches = [...text.matchAll(descontosRegexFallback)];
+                console.log("Regex de Desconto A falhou. Tentando Fallback (B)...");
+                const descontosRegexFallback = /(?:(\d{3})\s+)?([\d.,]+)\s+((?:EMPREST|AMORT)[^\n]+)/g;
+                matches = [...text.matchAll(descontosRegexFallback)];
             }
             console.log(`Contracheque (Servidor): Encontrados ${matches.length} descontos.`);
 
@@ -1932,9 +1932,9 @@
                 const valorStr = match[2];
                 const nomeBanco = match[3].trim();
                 const valorParcelaNum = moedaParaFloat(valorStr);
-                
+
                 if (valorParcelaNum > 5.00) {
-                     loansArray.push({
+                    loansArray.push({
                         banco: nomeBanco.replace(/\s+/g, ' '), // Limpa quebras de linha no nome do banco
                         parcelaNum: valorParcelaNum,
                         status: `Prazo: ${prazo}`,
@@ -1946,7 +1946,208 @@
             return { loans: loansArray, cliente: cliente };
         }
 
+        // =================================================================
+        // === NOVO: FUNÇÃO PARA GOVERNO DE MINAS GERAIS (MG) ===
+        // =================================================================
+        async function processarPdfGovMG(text) {
+            // Hardcode 'MG' pois este parser é específico
+            let cliente = { nome: 'Não lido', cpf: 'Não lido', estado: 'MG', profissao: '', orgao: '' };
+            let loansArray = [];
 
+            console.log("Processando como Contracheque GOVERNO DE MINAS GERAIS...");
+
+            // 1. Extrair Dados do Cliente
+            try {
+                // Formato: Nome: \n \nJakeline de Matos Castro\n \nMASP:
+                const nomeMatch = text.match(/Nome:\s*\n\s*([^\n]+)\s*\n\s*MASP:/);
+                if (nomeMatch) cliente.nome = nomeMatch[1].trim();
+
+                // Formato: CPF: \n \n011.744.306-99\n \nPis/Pasep:
+                const cpfMatch = text.match(/CPF:\s*\n\s*([^\n]+)\s*\n\s*Pis\/Pasep:/);
+                if (cpfMatch) cliente.cpf = cpfMatch[1].trim();
+
+                // Formato Tabela Cargo:
+                // Admissão \nNome do Cargo \nSímbolo / Grau \nSituação Funcional \nÓrgão/Entidade\n
+                // \n3\n \nProfessor de Educacao Basica\n \nPEB2 - C\n \nServidor Nomeado...\n \nSecretaria de Educacao
+                const cargoBlockMatch = text.match(
+                    /Admissão\s*Nome do Cargo\s*Símbolo \/ Grau\s*Situação Funcional\s*Órgão\/Entidade\s*\n\s*\d+\s*\n\s*([^\n]+)\s*\n\s*[^\n]+\s*\n\s*[^\n]+\s*\n\s*([^\n]+)/
+                );
+
+                if (cargoBlockMatch) {
+                    cliente.profissao = cargoBlockMatch[1].trim(); // "Professor de Educacao Basica"
+                    cliente.orgao = cargoBlockMatch[2].trim();     // "Secretaria de Educacao"
+                }
+
+                console.log("Cliente (GOV-MG):", cliente.nome, cliente.cpf);
+                console.log("Cargo (GOV-MG):", cliente.profissao, cliente.orgao);
+
+            } catch (e) {
+                console.error("Erro ao parsear dados do cliente (GOV-MG):", e);
+            }
+
+            // 2. Extrair Contratos (Descontos)
+            try {
+                // Pega o bloco de texto entre "Descontos (R$)" e "Total: R$"
+                const descontosBlockMatch = text.match(/Descontos \(R\$\)\s*([\s\S]+?)\s*Total:\s*R\$/);
+                if (descontosBlockMatch) {
+                    const descontosBlock = descontosBlockMatch[1];
+
+                    // Regex para cada linha da tabela de descontos
+                    // Formato: \nAdmissão \nReferência \nDescrição \nEspecificação \nParcela \nValor
+                    // Ex: \n3 \nNormal \nB.pan - Emprest. i \n0 \n14 de 120 \n204,00
+                    const rowRegex = /\n\s*(\d+)\s*\n\s*([^\n]+)\s*\n\s*([^\n]+)\s*\n\s*([^\n]+)\s*\n\s*([^\n]+)\s*\n\s*([\d.,]+)/g;
+
+                    let matches = [...descontosBlock.matchAll(rowRegex)];
+                    console.log(`Gov-MG: Encontrados ${matches.length} descontos.`);
+
+                    matches.forEach((match) => {
+                        const descricao = match[3].trim().toUpperCase();
+                        const status = match[5].trim(); // Ex: "14 de 120" or "-"
+                        const valorStr = match[6].trim();
+
+                        // Filtrar apenas por palavras-chave de empréstimo
+                        const isLoan = /EMPREST|EMP\.|CART BENEF|CART\.CREDITO|B\.PAN|BC\.SAFRA|BCO BMG|B\.DO BRASIL/.test(descricao);
+
+                        if (isLoan) {
+                            const valorParcelaNum = moedaParaFloat(valorStr);
+                            if (valorParcelaNum > 0) {
+                                loansArray.push({
+                                    banco: match[3].trim(), // Usa a descrição como "banco"
+                                    parcelaNum: valorParcelaNum,
+                                    status: (status === '-') ? 'N/A' : status, // Trata o "-" como N/A
+                                    contrato: 'N/A' // Não há número de contrato visível
+                                });
+                            }
+                        }
+                    });
+                } else {
+                    console.warn("Bloco de 'Descontos (R$)' não encontrado (GOV-MG).");
+                }
+            } catch (e) {
+                console.error("Erro ao parsear descontos (GOV-MG):", e);
+            }
+
+            return { loans: loansArray, cliente: cliente };
+        }
+
+
+        // =================================================================
+        // === NOVO: FUNÇÃO EXTRATO DE CONSIGNAÇÃO (GOV-MG) ===
+        // =================================================================
+        // =================================================================
+        // === NOVO: FUNÇÃO EXTRATO DE CONSIGNAÇÃO (GOV-MG) ===
+        // =================================================================
+        async function processarPdfExtratoMG(text) {
+            // Hardcode 'MG' pois este parser é específico
+            let cliente = { nome: 'Não lido', cpf: 'Não lido', estado: 'MG', profissao: '', orgao: '' };
+            let loansArray = [];
+
+            console.log("Processando como Extrato de Consignação (GOV-MG)...");
+
+            // 1. Extrair Dados do Cliente
+            try {
+                // Formato: Nome: \nJAKELINE DE MATOS CASTRO\n \nMASP:
+                const nomeMatch = text.match(/Nome:\s*\n\s*([^\n]+)\s*\n\s*MASP:/);
+                if (nomeMatch) cliente.nome = nomeMatch[1].trim();
+
+                // Formato: CPF: \n000.000.000-00
+                const cpfMatch = text.match(/CPF:\s*\n\s*([\d.-]+)/);
+                if (cpfMatch) cliente.cpf = cpfMatch[1].trim();
+
+                console.log("Cliente (Extrato MG):", cliente.nome, cliente.cpf);
+
+            } catch (e) {
+                console.error("Erro ao parsear dados do cliente (Extrato MG):", e);
+            }
+
+            // 2. Extrair Empréstimos (Consignações facultativas averbadas)
+            try {
+                // Pega o bloco de texto entre "Consignações facultativas averbadas" e "Reservas de margem de cartão"
+                const consignacoesBlockMatch = text.match(/Consignações facultativas averbadas([\s\S]+?)Reservas de margem de cartão/);
+                if (consignacoesBlockMatch) {
+                    const consignacoesBlock = consignacoesBlockMatch[1];
+
+                    // Regex para cada linha da tabela de empréstimos
+                    // Formato: [Banco] \s+ [Tipo] \s+ [Contrato] \s+ [Parcelas] \s+ [Valor] \s+ [Faltante]
+                    // Ex: Banco Safra S/A \n \n Emprestimo I \n \n 26684029 \n \n 39 de 96 \n \n R$ 128,37 \n \n 7445.46
+                    const rowRegex = /([^\n]+)\s+([^\n]+)\s+([\d-]+)\s+([\d\sde]+)\s+(R\$\s*[\d.,]+)\s+([\d.]+)/g;
+
+                    let matches = [...consignacoesBlock.matchAll(rowRegex)];
+                    console.log(`Extrato MG: Encontrados ${matches.length} empréstimos.`);
+
+                    matches.forEach((match) => {
+                        const banco = match[1].trim();
+                        // const tipo = match[2].trim(); // Não é mais usado no nome
+                        const contrato = match[3].trim();
+                        const status = match[4].trim();
+                        const valorStr = match[5].trim();
+
+                        const valorParcelaNum = moedaParaFloat(valorStr);
+
+                        if (valorParcelaNum > 0) {
+                            loansArray.push({
+                                // ***** ESTA É A LINHA CORRIGIDA *****
+                                banco: banco, // Apenas o nome do banco
+                                parcelaNum: valorParcelaNum,
+                                status: status,
+                                contrato: contrato
+                            });
+                        }
+                    });
+                } else {
+                    console.warn("Bloco 'Consignações facultativas' não encontrado (Extrato MG).");
+                }
+
+            } catch (e) {
+                console.error("Erro ao parsear empréstimos (Extrato MG):", e);
+            }
+
+            // 3. Extrair Cartões (Reservas de margem de cartão)
+            try {
+                // Pega o bloco de texto após "Reservas de margem de cartão"
+                const cartaoBlockMatch = text.match(/Reservas de margem de cartão([\s\S]+)/);
+                if (cartaoBlockMatch) {
+                    const cartaoBlock = cartaoBlockMatch[1];
+
+                    // Regex para cada linha da tabela de cartões
+                    // Formato: [Entidade] \s+ [Tipo] \s+ [Contrato] \s+ [Valor Reservado]
+                    // Ex: Banco Bmg S/a \n \n Cartão Crédito \n \n 7214976 \n \n R$ 493,54
+                    const cardRowRegex = /([^\n]+)\s+([^\n]+)\s+([\d]+)\s+(R\$\s*[\d.,]+)/g;
+
+                    let cardMatches = [...cartaoBlock.matchAll(cardRowRegex)];
+                    console.log(`Extrato MG: Encontrados ${cardMatches.length} cartões.`);
+
+                    cardMatches.forEach((match) => {
+                        const banco = match[1].trim();
+                        const tipo = match[2].trim();
+                        const contrato = match[3].trim();
+                        const valorStr = match[4].trim();
+
+                        const valorParcelaNum = moedaParaFloat(valorStr);
+
+                        if (valorParcelaNum > 0) {
+                            // Mantém a lógica original para cartões, pois "(Cartão Crédito)" é útil
+                            loansArray.push({
+                                banco: `${banco} (${tipo})`,
+                                parcelaNum: valorParcelaNum,
+                                status: 'N/A (Reserva)', // Cartão não tem status de parcela
+                                contrato: contrato
+                            });
+                        }
+                    });
+                }
+
+            } catch (e) {
+                console.error("Erro ao parsear cartões (Extrato MG):", e);
+            }
+
+            return { loans: loansArray, cliente: cliente };
+        }
+
+
+        // =================================================================
+        // === FUNÇÃO PRINCIPAL DE PARSE (ATUALIZADA) ===
+        // =================================================================
         // =================================================================
         // === FUNÇÃO PRINCIPAL DE PARSE (ATUALIZADA) ===
         // =================================================================
@@ -1980,8 +2181,8 @@
                     }
 
                     // (hasRealData check is still good)
-                    const hasRealData = extractedText.toUpperCase().includes('CONSIGNATÁRIA') || extractedText.toUpperCase().includes('EMPRÉSTIMO') || extractedText.toUpperCase().includes('CPF') || extractedText.toUpperCase().includes('RUBRICA') || extractedText.toUpperCase().includes('COMPROVANTE DE RENDIMENTOS');
-                    
+                    const hasRealData = extractedText.toUpperCase().includes('CONSIGNATÁRIA') || extractedText.toUpperCase().includes('EMPRÉSTIMO') || extractedText.toUpperCase().includes('CPF') || extractedText.toUpperCase().includes('RUBRICA') || extractedText.toUpperCase().includes('COMPROVANTE DE RENDIMENTOS') || extractedText.toUpperCase().includes('MARGEM DE CONSIGNAÇÃO');
+
                     if (extractedText.trim().length < 50 || !hasRealData) {
                         textFound = false;
                         console.log("Texto 'limpo' não parece válido. Forçando OCR (Plano B).");
@@ -2011,25 +2212,36 @@
                     }
                     // --- FIM DO PLANO B ---
 
-                    
+
                     // **** INÍCIO DA DETECÇÃO AUTOMÁTICA (ATUALIZADA) ****
-                    
+
                     // 1. Verifica se é Contracheque de Pensionista
                     if (extractedText.includes("DE BENEFICIÁRIO DE PENSÃO")) {
                         console.log("Detectado: Contracheque PENSIONISTA (SGP/SIGEPE)");
                         result = await processarPdfContrachequeSGP(extractedText); // (Chama a função antiga)
-                    
-                    // 2. Verifica se é Contracheque de Servidor (O novo)
+
+                        // 2. Verifica se é Contracheque de Servidor (O novo)
                     } else if (extractedText.includes("COMPROVANTE DE RENDIMENTOS - FOLHA")) {
                         console.log("Detectado: Contracheque SERVIDOR (SGP/SIGEPE)");
-                        result = await processarPdfContrachequeServidor(extractedText); // (Chama a NOVA função)
+                        result = await processarPdfContrachequeServidor(extractedText);
 
-                    // 3. Verifica se é Extrato SIAPE
+                        // 3a. Verifica se é Demonstrativo de Pagamento GOV-MG
+                    } else if (extractedText.includes("GOVERNO DO ESTADO DE MINAS GERAIS") && extractedText.includes("DEMONSTRATIVO DE PAGAMENTO")) {
+                        console.log("Detectado: Contracheque GOVERNO DE MINAS GERAIS");
+                        result = await processarPdfGovMG(extractedText);
+
+                        // // NOVO DETECTOR (3b) //
+                        // 3b. Verifica se é Extrato de Consignação GOV-MG
+                    } else if (extractedText.includes("GOVERNO DO ESTADO DE MINAS GERAIS") && extractedText.includes("Margem de Consignação")) {
+                        console.log("Detectado: Extrato de Consignação GOVERNO DE MINAS GERAIS");
+                        result = await processarPdfExtratoMG(extractedText); // (Chama a NOVA função)
+
+                        // 4. Verifica se é Extrato SIAPE
                     } else if (extractedText.includes("Extrato de Consignações Vigentes") || extractedText.includes("Rubrica\nSequência") || extractedText.includes("Rubrica\n")) {
                         console.log("Detectado: Extrato SIAPE");
                         result = await processarPdfSiape(extractedText);
-                    
-                    // 4. Assume Exército como padrão
+
+                        // 5. Assume Exército como padrão
                     } else {
                         console.log("Detectado: Extrato Exército (Padrão)");
                         result = await processarPdfExercicio(extractedText);
@@ -2037,7 +2249,137 @@
                     // **** FIM DA DETECÇÃO ****
 
                     // --- Armazena o cliente lido globalmente ---
-                    window.ultimoClientePDF = result.cliente; 
+                    window.ultimoClientePDF = result.cliente;
+
+                    showToast("Documento lido e convênio detectado!", "success");
+                    showContractModal(result.loans, result.cliente); // Mostra o modal com os resultados
+
+                } catch (error) {
+                    console.error("Erro ao processar o PDF:", error);
+                    showToast(`Erro ao ler o PDF: ${error.message}`, "danger");
+                } finally {
+                    hideLoading();
+                }
+            };
+            fileReader.readAsArrayBuffer(file);
+        }
+        // =================================================================
+        // === FUNÇÃO PRINCIPAL DE PARSE (ATUALIZADA) ===
+        // =================================================================
+        // =================================================================
+        // === FUNÇÃO PRINCIPAL DE PARSE (CORRIGIDA) ===
+        // =================================================================
+        async function parsearPdf(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            event.target.value = null;
+            showLoading('Analisando...');
+            const loadingText = document.getElementById("loading-text");
+
+            const fileReader = new FileReader();
+            fileReader.onload = async function () {
+                let extractedText = '';
+                // (Note: 'profissao' and 'orgao' are added to the default object)
+                let result = { loans: [], cliente: { nome: '', cpf: '', estado: '', profissao: '', orgao: '' } };
+                window.ultimoClientePDF = {}; // Limpa o cliente global
+
+                try {
+                    const typedarray = new Uint8Array(this.result);
+                    const pdf = await pdfjsLib.getDocument(typedarray).promise;
+                    let textFound = false;
+
+                    // --- PLANO A: TENTATIVA DE LEITURA RÁPIDA ---
+                    for (let i = 1; i <= pdf.numPages; i++) {
+                        const page = await pdf.getPage(i);
+                        const textContent = await page.getTextContent();
+                        if (textContent.items.length > 0) textFound = true;
+                        // --- MELHORIA: Junta com \n (do depurador) ---
+                        extractedText += textContent.items.map(item => item.str).join('\n') + '\n\n--- FIM DA PÁGINA ' + i + ' ---\n\n';
+                    }
+
+                    // (hasRealData check is still good)
+                    const hasRealData = extractedText.toUpperCase().includes('CONSIGNATÁRIA') || extractedText.toUpperCase().includes('EMPRÉSTIMO') || extractedText.toUpperCase().includes('CPF') || extractedText.toUpperCase().includes('RUBRICA') || extractedText.toUpperCase().includes('COMPROVANTE DE RENDIMENTOS') || extractedText.toUpperCase().includes('MARGEM DE CONSIGNAÇÃO');
+
+                    if (extractedText.trim().length < 50 || !hasRealData) {
+                        textFound = false;
+                        console.log("Texto 'limpo' não parece válido. Forçando OCR (Plano B).");
+                    }
+
+                    // --- PLANO B: FALLBACK PARA OCR (TESSERACT) ---
+                    if (!textFound) {
+                        console.warn("PDF parece ser uma imagem. Iniciando OCR...");
+                        extractedText = '';
+                        if (typeof Tesseract === 'undefined') throw new Error("Tesseract.js não foi carregado.");
+
+                        const worker = await Tesseract.createWorker('por');
+                        for (let i = 1; i <= pdf.numPages; i++) {
+                            loadingText.textContent = `Lendo imagem: Página ${i} de ${pdf.numPages}...`;
+                            const page = await pdf.getPage(i);
+                            const viewport = page.getViewport({ scale: 2.0 });
+                            const canvas = document.createElement('canvas');
+                            const context = canvas.getContext('2d');
+                            canvas.height = viewport.height;
+                            canvas.width = viewport.width;
+                            await page.render({ canvasContext: context, viewport: viewport }).promise;
+                            const { data: { text: ocrText } } = await worker.recognize(canvas);
+                            extractedText += ocrText + '\n\n';
+                        }
+                        await worker.terminate();
+                        console.log("OCR Concluído.");
+                    }
+                    // --- FIM DO PLANO B ---
+
+
+                    // **** INÍCIO DA DETECÇÃO AUTOMÁTICA (CORRIGIDA) ****
+
+                    // Cria uma versão em maiúsculas do texto para detecção
+                    const upperText = extractedText.toUpperCase();
+
+                    // 1. Verifica se é Contracheque de Pensionista
+                    if (upperText.includes("DE BENEFICIÁRIO DE PENSÃO")) {
+                        console.log("Detectado: Contracheque PENSIONISTA (SGP/SIGEPE)");
+                        // NOTA: A função processarPdfContrachequeSGP() não foi fornecida, 
+                        // certifique-se que ela existe ou ajuste o nome abaixo.
+                        // Se ela não existir, o código vai falhar aqui.
+                        // Assumindo que você a tenha em algum lugar...
+                        try {
+                            result = await processarPdfContrachequeSGP(extractedText);
+                        } catch (e) {
+                            console.error("Função 'processarPdfContrachequeSGP' não encontrada ou falhou.", e);
+                            // Tenta o próximo para não parar
+                            result = await processarPdfExercicio(extractedText);
+                        }
+
+                        // 2. Verifica se é Contracheque de Servidor (O novo)
+                    } else if (upperText.includes("COMPROVANTE DE RENDIMENTOS - FOLHA")) {
+                        console.log("Detectado: Contracheque SERVIDOR (SGP/SIGEPE)");
+                        result = await processarPdfContrachequeServidor(extractedText);
+
+                        // 3a. Verifica se é Demonstrativo de Pagamento GOV-MG
+                    } else if (upperText.includes("GOVERNO DO ESTADO DE MINAS GERAIS") && upperText.includes("DEMONSTRATIVO DE PAGAMENTO")) {
+                        console.log("Detectado: Contracheque GOVERNO DE MINAS GERAIS");
+                        result = await processarPdfGovMG(extractedText);
+
+                        // 3b. Verifica se é Extrato de Consignação GOV-MG (A verificação agora é em maiúsculas)
+                    } else if (upperText.includes("GOVERNO DO ESTADO DE MINAS GERAIS") && upperText.includes("MARGEM DE CONSIGNAÇÃO")) {
+                        console.log("Detectado: Extrato de Consignação GOVERNO DE MINAS GERAIS");
+                        result = await processarPdfExtratoMG(extractedText); // (Chama a função correta)
+
+                        // 4. Verifica se é Extrato SIAPE
+                    } else if (upperText.includes("EXTRATO DE CONSIGNAÇÕES VIGENTES") || upperText.includes("RUBRICA\nSEQUÊNCIA") || upperText.includes("RUBRICA\n")) {
+                        console.log("Detectado: Extrato SIAPE");
+                        result = await processarPdfSiape(extractedText);
+
+                        // 5. Assume Exército como padrão
+                    } else {
+                        console.log("Detectado: Extrato Exército (Padrão)");
+                        result = await processarPdfExercicio(extractedText);
+                    }
+                    // **** FIM DA DETECÇÃO ****
+
+                    // --- Armazena o cliente lido globalmente ---
+                    window.ultimoClientePDF = result.cliente;
 
                     showToast("Documento lido e convênio detectado!", "success");
                     showContractModal(result.loans, result.cliente); // Mostra o modal com os resultados
