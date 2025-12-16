@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerador de Termo de Responsabilidade (v17-Soma+Contracheque+CEP)</title>
+    <title>Gerador de Termo de Responsabilidade (v18-Corrigido)</title>
 
     <script>
         // SCRIPT DE GUARDA DE AUTENTICAÇÃO
@@ -258,14 +258,16 @@
             page-break-inside: avoid !important;
         }
 
-        /* --- SOLUÇÃO "EXPLICITA" PARA QUEBRA DE PÁGINA --- */
+        /* --- SOLUÇÃO "EXPLICITA" PARA QUEBRA DE PÁGINA (CORRIGIDO) --- */
         .quebra-pagina-explicita {
             display: block;
-            height: 1px;
+            height: 0;
+            /* ZERADO para não ocupar espaço */
             width: 100%;
             page-break-before: always !important;
             break-before: always !important;
             margin: 0;
+            /* ZERADO */
             padding: 0;
             visibility: hidden;
         }
@@ -311,9 +313,17 @@
         }
 
         /* --- BLOCOS DE DADOS --- */
-        /* CORREÇÃO (Imagem 1): Aumentado espaço entre blocos (Page 1) */
+        /* CORREÇÃO: Reduzido de 40px para 25px para caber o título */
         .bloco-dados {
-            margin-bottom: 40px;
+            margin-bottom: 25px;
+        }
+
+        .titulo {
+            text-align: center;
+            margin-bottom: 7px;
+            font-size: 18px;
+            font-weight: bold;
+
         }
 
         .bloco-titulo {
@@ -797,6 +807,8 @@
     <div id="preview-container">
         <div id="documento-completo">
 
+            <div class="titulo">TERMO DE CIÊNCIA DE RESPONSABILIDADE</div>
+
             <div class="bloco-dados">
                 <h3 class="bloco-titulo">DADOS DO CLIENTE</h3>
                 <p class="dado-linha">
@@ -859,7 +871,7 @@
                 </p>
             </div>
 
-            <div class="bloco-dados">
+            <div class="bloco-dados" style="margin-bottom: 0;">
                 <h3 class="bloco-titulo">DADOS DA EMPRESA</h3>
                 <p class="dado-linha">Razão Social: <span>POLLO PROMOTORA LTDA</span></p>
                 <p class="dado-linha">CNPJ: <span>44.906.703/0001-59</span></p>
