@@ -1,4 +1,4 @@
-// Função para gerar um hash SHA-256 de uma string
+// A função de hash está correta, não precisa mudar.
 async function hashPassword(password) {
     const encoder = new TextEncoder();
     const data = encoder.encode(password);
@@ -15,17 +15,29 @@ document.getElementById('loginForm').addEventListener('submit', async function (
     const password = document.getElementById('password').value;
     const errorMessage = document.getElementById('errorMessage');
 
-    // Credenciais de acesso com hash (mais seguro que texto puro)
-    const emailCorreto = "equipe@andressa.com";
-    const senhaHashCorreta = "6df66466d69a28f772ac4549256fc68b37dd8827943b213c7faf00107d451f5e";
+    // --- CORREÇÃO AQUI ---
+    // 1. Crie um Array com os e-mails válidos
+    const emailsCorretos = [
+        "equipe@andressa.com",
+        "equipe@alessandra.com",
+        "equipe@junior.com",
+        "equipe@michelle.com",
+        "equipe@fenix.com"
+    ];
+    
+    // A senha está correta (o hash para "123456")
+    const senhaHashCorreta = "ab386d81ec1c55c539bb1afddb409a4f3ce159ecb9170debacad67c0484b7364";
 
     // Gera o hash da senha inserida pelo usuário
     const senhaHashDigitada = await hashPassword(password);
     
-
-    if (email === emailCorreto && senhaHashDigitada === senhaHashCorreta) {
+    // 2. Verifique se o e-mail digitado ESTÁ NO ARRAY (.includes())
+    if (emailsCorretos.includes(email) && senhaHashDigitada === senhaHashCorreta) {
         localStorage.setItem('isAuthenticated', 'true');
-        window.location.href = 'termo.html';
+        
+        // 3. Redireciona para a página correta 
+        window.location.href = 'termo.html'; 
+    
     } else {
         errorMessage.textContent = "E-mail ou senha incorretos.";
         errorMessage.classList.remove('hidden');
