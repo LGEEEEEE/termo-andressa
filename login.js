@@ -21,7 +21,7 @@ document.getElementById('loginForm').addEventListener('submit', async function (
         "equipe@andressa.com",
         "equipe@alessandra.com",
         "equipe@junior.com",
-        "equipe@michelle.com",
+        "equipe@michele.com",
         "equipe@fenix.com"
     ];
     
